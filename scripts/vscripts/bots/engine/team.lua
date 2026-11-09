@@ -201,4 +201,42 @@ function Team.GetFocusTarget(snap)
   return bb.focusUnit
 end
 
+
+-- ---- v2.0.0: Team 层战略 (TeamThink) ----
+-- 每帧先跑一次 (team_think.lua 的 TeamThink() 调这里), 定全队战略并写进黑板,
+-- 供各 Mode 读。不要让每个 Bot 各自猜全队意图。
+-- 规则: 敌方减员>=2 且 20 分钟后 -> roshan; 敌方减员>=1 且我方占优 -> push;
+-- 连招窗口有效 -> teamfight; 否则 farm。返回 plan 名。
+function Team.TeamThink(bot, snap, bb)
+  bb = bb or Team.GetBlackboard()
+  if snap ~= nil then
+    Team.UpdateDeadEnemies(snap.numEnemies or 0, 5)
+  end
+  local w = Team.GetComboWindow()
+  if w ~= nil then
+    bb.plan = "teamfight"
+    return "teamfight"
+  end
+  local t = 0
+  if DotaTime ~= nil then
+    local ok, v = pcall(DotaTime)
+    if ok and type(v) == "number" then t = v end
+  end
+  if snap ~= nil then t = snap.time or t end
+  local dead = bb.deadEnemies or 0
+  local nA = 0
+  if snap ~= nil then nA = snap.numAllies or 0 end
+  if t > 1200 and dead >= 2 and (nA + 1) >= 3 then
+    bb.plan = "roshan"
+    bb.roshanCalled = t
+    return "roshan"
+  end
+  if dead >= 1 and (nA + 1) >= 3 then
+    bb.plan = "push"
+    return "push"
+  end
+  bb.plan = "farm"
+  return "farm"
+end
+
 return Team

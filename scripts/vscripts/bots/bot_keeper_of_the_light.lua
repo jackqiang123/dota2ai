@@ -1,8 +1,8 @@
--- bot_keeper_of_the_light.lua -- Keeper of the Light 光之守卫 (int, support 路) -- 薄 wrapper,决策在 engine/core.lua。
-local Core = require("bots/engine/core")
+-- bot_keeper_of_the_light.lua -- Keeper of the Light 光之守卫 (int, support 路) -- v2.0.0 薄 wrapper,决策在 mode_dispatcher.lua。
+local ModeDispatcher = require(GetScriptDirectory() .. "/mode_dispatcher")
 
 function Think()
   local bot = GetBot()
   if bot == nil then return end
-  Core.Think(bot)
+  ModeDispatcher.Think(bot)
 end

@@ -1,10 +1,9 @@
--- item_purchase_naga_siren.lua -- Naga Siren 娜迦海妖 -- 出装顺序在 data/heroes.lua 的 items 表里。
-local Heroes = require("bots/data/heroes")
-local Micro = require("bots/engine/micro")
-local HERO_KEY = "naga_siren"
+-- item_purchase_naga_siren.lua -- Naga Siren 娜迦海妖 -- v2.0.0: 出装走 item_purchase_generic.lua 的状态机,
+-- 读 BotLib 的 sBuyList / sSellList。
+local Generic = require(GetScriptDirectory() .. "/item_purchase_generic")
 
 function ItemPurchaseThink()
   local bot = GetBot()
   if bot == nil then return end
-  Micro.TryBuyNextItem(bot, Heroes[HERO_KEY])
+  Generic.ItemPurchaseThinkFor(bot)
 end

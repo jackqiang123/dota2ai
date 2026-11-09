@@ -64,10 +64,13 @@ def main():
                       % (sorted(expected - set(keys_in_lua))[:5], sorted(set(keys_in_lua) - expected)[:5]))
 
     # 4. 引擎 + 入口文件存在。
-    for rel in ["bot_generic.lua", "hero_selection.lua",
+    for rel in ["bot_generic.lua", "hero_selection.lua", "team_think.lua",
+                "mode_dispatcher.lua", "ability_item_usage_generic.lua",
+                "item_purchase_generic.lua",
                 "engine/perception.lua", "engine/utility.lua", "engine/micro.lua",
                 "engine/macro.lua", "engine/team.lua", "engine/core.lua",
-                "data/heroes.lua"]:
+                "engine/skill.lua", "data/heroes.lua", "data/talents.lua",
+                "data/combos.lua"]:
         if not (bots / rel).exists():
             errors.append("missing engine file: %s" % rel)
 
@@ -78,7 +81,7 @@ def main():
             errors.append("placeholder found in %s" % f.relative_to(root))
 
     # 6. 引用检查:核心 API 名必须出现(防止编造 API 而不用真 API)。
-    engine_text = (bots / "bot_generic.lua").read_text(encoding="utf-8") + "".join((bots / "engine" / f).read_text(encoding="utf-8") for f in ["core.lua", "micro.lua", "perception.lua"])
+    engine_text = (bots / "bot_generic.lua").read_text(encoding="utf-8") + "".join((bots / "engine" / f).read_text(encoding="utf-8") for f in ["core.lua", "micro.lua", "perception.lua"]) + "".join(f.read_text(encoding="utf-8") for f in sorted(bots.glob("mode_*_generic.lua")))
     for api in ["GetBot", "Action_MoveToLocation", "Action_AttackUnit", "Action_UseAbility"]:
         if api not in engine_text:
             warnings.append("engine does not mention %s" % api)
@@ -137,6 +140,65 @@ def main():
             all_text = "".join((bots / "engine" / f).read_text(encoding="utf-8") for f in ["team.lua", "micro.lua", "core.lua"])
             if fn not in all_text:
                 errors.append("missing interaction entry: %s" % fn)
+
+
+    # 12. v2.0.0: Mode 文件 >=12, 每个有 GetDesire/Think/OnStart。
+    mode_files = sorted(bots.glob("mode_*_generic.lua"))
+    if len(mode_files) < 12:
+        errors.append("mode files <12: %d" % len(mode_files))
+    for f in mode_files:
+        txt = f.read_text(encoding="utf-8")
+        for fn in ["GetDesire", "Think", "OnStart"]:
+            if fn not in txt:
+                errors.append("mode %s missing %s" % (f.name, fn))
+
+    # 13. v2.0.0: BotLib 127 个文件; 焦点英雄 10 个有 ConsiderQ/W/E/R + SkillsComplement + 天赋 + 主位置出装>=10 件。
+    from focus_heroes import FOCUS
+    botlib = bots / "BotLib"
+    for h in HEROES:
+        if not (botlib / ("hero_%s.lua" % h[0])).exists():
+            errors.append("missing BotLib hero_%s.lua" % h[0])
+    for key in FOCUS:
+        txt = (botlib / ("hero_%s.lua" % key)).read_text(encoding="utf-8")
+        for fn in ["ConsiderQ", "ConsiderW", "ConsiderE", "ConsiderR", "SkillsComplement", "TALENTS", "sBuyList", "sSellList"]:
+            if fn not in txt:
+                errors.append("focus %s missing %s" % (key, fn))
+        # 主位置出装件数: 取第一个 pos 列表的 item_ 出现次数
+        import re as _re
+        m = _re.search(r'sBuyList\["pos_\d+"\] = \{([^}]*)\}', txt)
+        if m and m.group(1).count("item_") < 10:
+            errors.append("focus %s main-pos buy list <10 items" % key)
+
+    # 14. v2.0.0: require 写法全仓库一致为 GetScriptDirectory() 写法, 不许残留 require("bots/...")。
+    for f in bots.rglob("*.lua"):
+        txt = f.read_text(encoding="utf-8", errors="replace")
+        if 'require("bots/' in txt or "require('bots/" in txt:
+            errors.append("old require(bots/...) still in %s" % f.relative_to(root))
+    if "GetScriptDirectory" not in (bots / "bot_generic.lua").read_text(encoding="utf-8"):
+        errors.append("bot_generic.lua does not use GetScriptDirectory()")
+
+    # 15. v2.0.0: Lua 5.1 兼容 —— 禁用 goto / table.unpack / // / 位运算 << >>。
+    for f in bots.rglob("*.lua"):
+        txt = f.read_text(encoding="utf-8", errors="replace")
+        for pat in [r"\bgoto\b", r"table\.unpack", r"//", r"<<", r">>"]:
+            if re.search(pat, txt):
+                errors.append("Lua 5.1 forbidden syntax %s in %s" % (pat, f.relative_to(root)))
+
+    # 16. v2.0.0: TeamThink 存在 (team.lua + team_think.lua), data/talents.lua 127 条。
+    team_txt = (bots / "engine" / "team.lua").read_text(encoding="utf-8")
+    if "function Team.TeamThink" not in team_txt:
+        errors.append("Team.TeamThink missing in engine/team.lua")
+    if "function TeamThink" not in (bots / "team_think.lua").read_text(encoding="utf-8"):
+        errors.append("global TeamThink missing in team_think.lua")
+    talents_txt = (bots / "data" / "talents.lua").read_text(encoding="utf-8")
+    if talents_txt.count("[10] =") != len(HEROES):
+        errors.append("data/talents.lua entries != %d" % len(HEROES))
+
+    # 17. v2.0.0: 旧 smoke_test.lua 已删 (硬编码 /home/hatch 路径), 由 verify_v200.lua 取代。
+    if (root / "tools" / "smoke_test.lua").exists():
+        errors.append("tools/smoke_test.lua still exists (hardcoded absolute path)")
+    if not (root / "tools" / "verify_v200.lua").exists():
+        errors.append("tools/verify_v200.lua missing")
 
     print("heroes: %d" % len(HEROES))
     print("per-hero files expected: %d" % (len(HEROES) * 3))

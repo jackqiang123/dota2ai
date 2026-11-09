@@ -1,7 +1,7 @@
 -- utility.lua
 -- 效用决策层:对每个候选行为算 Desire(0~1),选最高分执行。
 -- 权重全部放在 Difficulty / heroData 里,可离线调参后导出,不写死在 if-else 里。
-local Team = require("bots/engine/team")
+local Team = require(GetScriptDirectory() .. "/engine/team")
 
 local Utility = {}
 

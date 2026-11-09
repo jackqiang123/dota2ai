@@ -1,10 +1,9 @@
--- item_purchase_night_stalker.lua -- Night Stalker 暗夜魔王 -- 出装顺序在 data/heroes.lua 的 items 表里。
-local Heroes = require("bots/data/heroes")
-local Micro = require("bots/engine/micro")
-local HERO_KEY = "night_stalker"
+-- item_purchase_night_stalker.lua -- Night Stalker 暗夜魔王 -- v2.0.0: 出装走 item_purchase_generic.lua 的状态机,
+-- 读 BotLib 的 sBuyList / sSellList。
+local Generic = require(GetScriptDirectory() .. "/item_purchase_generic")
 
 function ItemPurchaseThink()
   local bot = GetBot()
   if bot == nil then return end
-  Micro.TryBuyNextItem(bot, Heroes[HERO_KEY])
+  Generic.ItemPurchaseThinkFor(bot)
 end

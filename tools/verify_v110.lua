@@ -8,6 +8,7 @@ if _root == "" then _root = "." end
 package.path = _root .. "/scripts/vscripts/?.lua;" .. _root .. "/scripts/vscripts/?/init.lua;" .. package.path
 
 BOT_MODE_NONE = 0
+function GetScriptDirectory() return "bots" end -- v2.0.0: 全部 require 改为 Valve 写法, 测试提供 stub。
 local _T = 100
 function DotaTime() return _T end
 function GetItemCost(name) return 100 end
@@ -201,12 +202,16 @@ do
   check("3b UpdateDeadEnemies estimates 2 dead", Team.GetBlackboard().deadEnemies == 2)
   local _, scores1 = Macro.Evaluate(nil, snap, Team.GetBlackboard())
   check("3c roshan score rises when deadEnemies>=1", scores1.roshan >= 0.65, "roshan=" .. tostring(scores1.roshan))
-  -- 插眼:5 号位戴泽,背包有眼,时间 100(ward 0.4 > farm 0.35,roam/push 均为 0)
+  -- 插眼 (v2.0.0: ward 是独立 Mode, 不再是 Core 的 best-action 分支):
+  -- 直接测 mode_ward_generic: GetDesire 在 0-1 内, Think() 发出插眼指令。
   Team.ResetBlackboard(); Core.ResetThinkState()
   setTime(100)
   local bot = mkbot({ hero = "dazzle", items = { [0] = mkitem("item_ward_observer") }, enemies = {}, allies = {} })
-  Core.Think(bot)
-  check("3d ward branch places an observer ward", hasLog(bot.log, "cast_loc:item_ward_observer"), table.concat(bot.log, ";"))
+  local Ward = require("bots/mode_ward_generic")
+  local snapW = Perception.Snapshot(bot)
+  local dW = Ward.GetDesire(bot, snapW, Team.GetBlackboard())
+  Ward.Think(bot, snapW, Team.GetBlackboard())
+  check("3d ward branch places an observer ward", type(dW) == "number" and dW >= 0 and dW <= 1 and hasLog(bot.log, "cast_loc:item_ward_observer"), "desire=" .. tostring(dW) .. " log=" .. table.concat(bot.log, ";"))
 end
 
 -- 4. 加点与属性表

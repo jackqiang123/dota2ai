@@ -1,10 +1,9 @@
--- item_purchase_vengeful_spirit.lua -- Vengeful Spirit 复仇之魂 -- 出装顺序在 data/heroes.lua 的 items 表里。
-local Heroes = require("bots/data/heroes")
-local Micro = require("bots/engine/micro")
-local HERO_KEY = "vengeful_spirit"
+-- item_purchase_vengeful_spirit.lua -- Vengeful Spirit 复仇之魂 -- v2.0.0: 出装走 item_purchase_generic.lua 的状态机,
+-- 读 BotLib 的 sBuyList / sSellList。
+local Generic = require(GetScriptDirectory() .. "/item_purchase_generic")
 
 function ItemPurchaseThink()
   local bot = GetBot()
   if bot == nil then return end
-  Micro.TryBuyNextItem(bot, Heroes[HERO_KEY])
+  Generic.ItemPurchaseThinkFor(bot)
 end

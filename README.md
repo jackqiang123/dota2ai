@@ -1,10 +1,10 @@
-# Dota 2 AI — 引擎 + 数据驱动的 Bot AI
+# Dota 2 AI — Valve Mode 系统 + 数据驱动的 Bot AI
 
-一整套、可安装、可跑的 Dota 2 Workshop Bot AI。**不是 124 份手写脚本**，而是一个引擎 + 一张英雄数据表 + 生成器。
+一整套、可安装、可跑的 Dota 2 Workshop Bot AI。**不是 124 份手写脚本**，而是 Valve 原生 Team / Mode / Action 三层结构 + 一张英雄数据表 + 生成器。
 
-> 版本：**v1.1.0**（2026-11-09）| 版本基准：**7.41f，127 名英雄**。
+> 版本：**v2.0.0**（2026-11-09）| 版本基准：**7.41f，127 名英雄**。
 >
-> **v1.1.0 更新日志：**修了 v1.0 独立验证发现的全部实锤问题——(1) 补齐 channel / summon / aura / passive / escape 技能分支，帕吉/祸乱之源/冰女/巫医大招和陈召唤现在能放；(2) 删掉疯狂档金钱经验加成的纸面说法，thinkDelay 改为 Core 真正节流；(3) 接通死代码：UpdateDeadEnemies / AssignLane / 插眼分支 / 信使送货，Macro 打盾分能起来；(4) 加点 0 级显式跳过、Invoker 改为显式 25 级表（Quas/Wex/Exort 各 7、Invoke 4，2 级点 Invoke）、主属性按官方 7.41f 修正为 36 力 / 35 敏 / 34 智 / 22 全才、朗戈改为力量辅助 4/5 号位；(5) 新增英雄互动系统：连招窗口、集火、救人优先、选人协同（见下文“英雄互动”）。全部修复由 `tools/verify_v110.lua` 的 40 项测试证明，见“校验结果”。任务原文写“约 124 名”时还是 7.38 口径；经核实（Valve 官方英雄页 / datafeed，2026-11-09），2025-12-16 的 7.40 加入 **朗戈 Largo** 后总数为 **127**，此处按 127 名交付，一个不少。中文名以 dota2.com.cn 为准（已核实：Snapfire = 电炎绝手、Arc Warden = 天穹守望者、Outworld Destroyer = 殁境神蚀者、Pangolier = 石鳞剑士、Muerta = 琼英碧灵、Ringmaster = 百戏大王、Largo = 朗戈）。
+> **v2.0.0 更新日志：**架构换成 OHA 的方法（Valve 原生 Mode 系统）——(1) `bot_generic.lua` 只做入口，决策交给 `mode_dispatcher.lua` + 15 个 `mode_*_generic.lua`（每帧全部 GetDesire 打分，最高分模式的 Think 才跑）；(2) 新增 `team_think.lua` / `Team.TeamThink()`，每帧先定全队战略写进黑板；(3) 新增 `ability_item_usage_generic.lua` / `item_purchase_generic.lua`，技能走 BotLib `SkillsComplement()`，出装走按位置买装的状态机；(4) 新增 `BotLib/hero_<name>.lua`（127 个）：10 个焦点英雄写满真实 Consider 逻辑，117 个走通用 fallback；天赋表新增 `data/talents.lua`（焦点英雄自选，其余按主属性通用）；(5) 全仓库 require 改为 `require(GetScriptDirectory() .. "/...")` 的 Valve 写法；(6) Lua 5.1 兼容检查进 `validate.py`；旧 `smoke_test.lua`（硬编码 /home/hatch 路径）已删，由 `verify_v200.lua`（71 项）取代。v1.1.0 的修复与英雄互动全部保留，见下文。任务原文写“约 124 名”时还是 7.38 口径；经核实（Valve 官方英雄页 / datafeed，2026-11-09），2025-12-16 的 7.40 加入 **朗戈 Largo** 后总数为 **127**，此处按 127 名交付，一个不少。中文名以 dota2.com.cn 为准（已核实：Snapfire = 电炎绝手、Arc Warden = 天穹守望者、Outworld Destroyer = 殁境神蚀者、Pangolier = 石鳞剑士、Muerta = 琼英碧灵、Ringmaster = 百戏大王、Largo = 朗戈）。
 
 ## 统计（实测）
 
@@ -12,8 +12,10 @@
 |---|---|
 | 英雄总数 | 127 |
 | 每英雄文件（bot / ability_item_usage / item_purchase） | 381（3 × 127） |
-| Lua 文件总数 | 391（381 + bot_generic + hero_selection + 6 个引擎 + heroes.lua + combos.lua） |
-| 引擎文件 | 6（perception / utility / micro / macro / team / core） |
+| Lua 文件总数 | 539（381 per-hero + 127 BotLib + 15 Mode + 通用入口 + 7 引擎 + 数据表） |
+| 引擎文件 | 7（perception / utility / micro / macro / team / core 垫片 / skill） |
+| Mode 文件 | 15（laning / farm / push + 三分路包装 / retreat / attack / roam / team_roam / roshan / ward / defend_tower / rune / secret_shop） |
+| BotLib 英雄文件 | 127（10 个焦点深度版 + 117 个通用版） |
 | 出装涉及的不同物品 | 64（均为真实物品名） |
 | 校验 | `luac -p` 全过，0 错误 0 警告；见下文 |
 
@@ -23,27 +25,51 @@
 
 ```
 scripts/vscripts/bots/
-  bot_generic.lua            # 通用入口：没有专属文件时走这里，只转发给 engine/core
-  bot_<hero>.lua             # 每英雄 1 个薄 wrapper：只调 Core.Think(bot)
-  ability_item_usage_<hero>.lua  # 技能释放 + 加点（加点表来自 heroes.lua）
-  item_purchase_<hero>.lua   # 出装（顺序来自 heroes.lua 的 items 表）
-  hero_selection.lua         # 选人：按阵容补位 + 经典组合协同加分（见 data/combos.lua）
-  data/heroes.lua            # 全英雄数据表（生成器产物，不要手改）
-  data/combos.lua            # v1.1.0 新增：14 组经典组合 + 先手大招表 + 救人英雄表
+  bot_generic.lua            # v2.0.0 通用入口 (约 20 行): 只初始化 + 调 mode_dispatcher, 不再自己算全部行为
+  mode_dispatcher.lua        # Mode 分发器: 每帧对全部 Mode 调 GetDesire(), 最高分模式的 Think() 才跑; 模式切换调 OnStart()
+  team_think.lua             # Team 层入口: Valve 每帧先调 TeamThink(), 转给 engine/team.lua 的 Team.TeamThink()
+  mode_laning_generic.lua    # 对线: 前期赖线、补刀、反补
+  mode_farm_generic.lua      # 刷钱: 野区 / 线上刷钱
+  mode_push_generic.lua      # 推塔 (通用实现)
+  mode_push_tower_mid/bot/top_generic.lua  # 推塔三分路包装
+  mode_retreat_generic.lua   # 撤退: 血量低 / 敌多我少时回塔 / 回泉
+  mode_attack_generic.lua    # 进攻: 打集火目标, 连招窗口内优先参团
+  mode_roam_generic.lua      # 游走: 4/5 号位中期去别路抓人
+  mode_team_roam_generic.lua # 抱团游走: 连招窗口 / 队友集合时一起抓人
+  mode_roshan_generic.lua    # 打盾: 敌方减员 + 我方占优 + 20 分钟后
+  mode_ward_generic.lua      # 插眼: 背包有眼时去预设点插眼
+  mode_defend_tower_generic.lua  # 守塔: 敌方推我方塔时回防
+  mode_rune_generic.lua      # 控符: 每 2 分钟前后的符点窗口
+  mode_secret_shop_generic.lua   # 秘密商店: 需要秘密商店配件且有钱时去买
+  ability_item_usage_generic.lua # 通用技能入口: 救人优先 -> BotLib SkillsComplement() -> 通用物品使用
+  item_purchase_generic.lua  # 通用出装入口: 按位置买装的状态机, 读 BotLib 的 sBuyList / sSellList
+  bot_<hero>.lua             # 每英雄 1 个薄 wrapper: 只调 ModeDispatcher.Think(bot)
+  ability_item_usage_<hero>.lua  # 技能释放 + 加点 (走 BotLib, 加点表来自 SKILL_BUILD)
+  item_purchase_<hero>.lua   # 出装 (委托给 item_purchase_generic)
+  hero_selection.lua         # 选人: 按阵容补位 + 经典组合协同加分 (见 data/combos.lua)
+  BotLib/hero_<name>.lua     # 每英雄 1 个文件: 天赋表 / 加点表 / 分位置出装表 / 技能名表 / SkillsComplement() + ConsiderX()
+  data/heroes.lua            # 全英雄数据表 (生成器产物, 不要手改)
+  data/talents.lua           # v2.0.0 新增: 天赋表 (焦点英雄自选, 其余按主属性通用)
+  data/combos.lua            # 14 组经典组合 + 先手大招表 + 救人英雄表
   engine/
-    perception.lua  # 感知：每 0.25s 快照 + 缓存，避免每帧全图扫描；只读己方视野
-    utility.lua     # 效用决策：补刀/推线/打野/参团/撤退/打盾等 Desire 打分，选最高；连招窗口内参团分 +0.25
-    micro.lua       # 微操：技能按类型抽象释放（含 channel/summon/escape）；救人优先；插眼；信使；补刀算 0.3s 后的血量
-    macro.lua       # 宏观：每 30s 重评推塔 vs 打盾 vs 刷钱的收益，选最大的（打盾分由黑板 deadEnemies 驱动）
-    team.lua        # 团队黑板：5 人共享意图 + 分路分配 + 连招窗口 + 集火目标，带过期失效
-    core.lua        # 门面：感知 -> 打分 -> 微操 -> 执行，串成一个 Think()；thinkDelay 真正节流
+    perception.lua  # 感知: 每 0.25s 快照 + 缓存, 只读己方视野
+    utility.lua     # 效用决策: Desire 打分 (供 Mode 参考); 难度表 (thinkDelay / 补刀容错 / 撤退阈值)
+    micro.lua       # 微操: 技能按类型抽象释放 (含 channel/summon/escape); 救人优先; 插眼; 信使; 补刀算 0.3s 后的血量
+    macro.lua       # 宏观: 每 30s 重评推塔 vs 打盾 vs 刷钱的收益
+    team.lua        # 团队黑板 + TeamThink(): 5 人共享意图 + 分路分配 + 连招窗口 + 集火目标
+    skill.lua       # v2.0.0 新增: 动态读槽位 (GetAbilityList/GetAbilityMap)、天赋表、施放辅助
+    core.lua        # v2.0.0 兼容垫片: Core.Think() 转给 ModeDispatcher.Think(), 不再写决策逻辑
 tools/
-  heroes_data.py  # 单一事实来源：127 名英雄（中英文名/定位/分路/技能类型/加点优先级/招牌装）
-  generate.py     # 生成器：读 heroes_data.py，产出 heroes.lua + 381 个 per-hero 文件
-  validate.py     # 校验：luac 语法 + 文件齐全 + 计数一致 + 无 TODO/占位符 + 主属性计数 + Invoker 上限 + 无 goldMul/xpMul + combos>=12
-  smoke_test.lua  # 运行时冒烟测试：mock Bot 跑 Core.Think / 选人 / 三个英雄的 Think
-  verify_v110.lua # v1.1.0 验证测试：40 项，覆盖每一条修复与互动（带真实技能 mock）
+  heroes_data.py  # 单一事实来源: 127 名英雄 (中英文名/定位/分路/技能类型/加点优先级/招牌装)
+  focus_heroes.py # v2.0.0 新增: 10 个焦点英雄的深度数据 (真实技能名 / Consider 条件 / 天赋自选 / 分位置出装)
+  generate.py     # 生成器: 读 heroes_data.py + focus_heroes.py, 产出 heroes.lua + talents.lua + 381 个 per-hero 文件 + 127 个 BotLib 文件
+  validate.py     # 校验: luac + 文件齐全 + 计数 + 无占位符 + 主属性 + Invoker 上限 + 无 goldMul/xpMul + combos>=12 + Mode>=12 + BotLib/Consider + GetScriptDirectory 一致 + Lua 5.1 检查 + TeamThink + talents 计数
+  verify_v110.lua # v1.1.0 验证测试: 40 项 (已适配 v2.0.0 的 GetScriptDirectory stub 与 Mode 化插眼)
+  verify_v200.lua # v2.0.0 验证测试: 71 项, 覆盖 Mode/TeamThink/焦点英雄 Consider/combo/GetScriptDirectory/Lua 5.1/天赋/出装
 ```
+
+**方法来源与致谢 (v2.0.0):** 架构方法来自 Valve 官方 Bot API 文档的三层结构 (Team / Mode / Action) 与 Open Hyper AI (OHA, forest0xia, MIT 协议) 的 `docs/ARCHITECTURE.md` 描述的目录结构与文件分工 (BotLib 英雄文件分段: 天赋 / 加点 / 分位置出装 / SkillsComplement / Consider)。**本项目所有代码均为原创实现, 未复制 OHA 或其上游 adamqqq (GPLv3) 的任何代码文件, 未拷贝其具体数值、注释与变量名。** OHA 本身基于 Valve 默认 Bot 与多位作者的工作, 本项目在此致谢 Valve 与 OHA 的方法贡献。
+
 
 **设计原则：**
 
@@ -51,7 +77,9 @@ tools/
 2. **加点表是数据。** `skill_build` 为 1–25 级序列，6/11/16 点大招；全部技能满级后的等级填 `0`，表示该级无技能可点（点天赋），`AbilityLevelUpThink` 会显式跳过（v1.1.0 修：之前靠调 `GetAbilityInSlot(-1)` 意外跳过，现已显式 return）。Invoker 用显式表：Quas/Wex/Exort 各 7 级、Invoke 4 级，2 级点 Invoke。
 3. **出装是数据。** `items = { early / mid / late / situational }`，按位置给模板 + 每英雄 3 件招牌装；`Micro.TryBuyNextItem` 按顺序逐件买，第一件没钱就不跳过去买后面的。
 4. **不作弊。** 感知只用己方视野内的 `GetNearbyHeroes / GetNearbyCreeps / GetNearbyTowers`，没有全图视野，没有读敌方不可见信息。v1.1.0 诚实说明：Lua Bot 脚本没有给 Bot 发金钱/经验的 API，v1.0 的“疯狂档 1.25 倍金钱经验”是纸面数字，已删除；真正的引擎级 Unfair 由房间难度控制，本项目 Unfair 只靠反应延迟和决策阈值区分。
-5. **英雄互动（v1.1.0 新增）。** 见下文“英雄互动”一节：连招窗口、集火、救人优先、选人协同。
+5. **英雄互动（v1.1.0 新增，v2.0.0 保留并搬进 Mode）。** 见下文“英雄互动”一节：连招窗口、集火、救人优先、选人协同；attack / team_roam 模式读连招窗口，attack 模式打 FocusTarget，技能入口先跑救人。
+6. **焦点英雄深度（v2.0.0 新增）。** 10 个焦点英雄（axe / zeus / lion / crystal_maiden / magnus / faceless_void / enigma / dazzle / oracle / huskar）是真实 Consider 逻辑，其余 117 个是通用类型驱动 fallback——这正是 dragonghy fork 的策略：先把少数英雄做深，再扩覆盖。
+7. **Lua 5.1 兼容。** Dota 的 Lua VM 是 5.1，不是 5.4；全仓库禁用 goto / table.unpack / // / 位运算，`validate.py` 有专门检查。`require` 全用 `require(GetScriptDirectory() .. "/...")` 的 Valve 写法，测试里用同名 stub。
 
 ## 安装
 
@@ -82,13 +110,13 @@ tools/
 
 没有任何一档有金钱/经验加成：Lua Bot 脚本没有发金钱/经验的 API，v1.0 表里的金钱经验系数是纸面数字，v1.1.0 已删除。难度只靠反应延迟、补刀容错、撤退阈值、激进程度区分；想要引擎级数值加成的 Unfair，请用房间难度设置。
 
-## 校验结果（本机实测，2026-11-09，v1.1.0）
+## 校验结果（本机实测，2026-11-09，v2.0.0）
 
 ```bash
-python3 tools/generate.py   # heroes: 127 / per-hero files: 381
-python3 tools/validate.py   # lua files: 391, validator: /usr/bin/luac, errors: 0, warnings: 0 -> VALIDATION PASSED
-lua5.4 tools/smoke_test.lua  # SMOKE OK: Core.Think x2, 英雄查找, 选人, bot_axe/zeus/largo 的 Think 均无错误
-lua5.4 tools/verify_v110.lua  # VERIFY_V110 PASSED: 40 checks
+python3 tools/generate.py   # heroes: 127 / per-hero files: 381 + BotLib 127 / focus: 10
+python3 tools/validate.py   # lua files: 539, validator: /usr/bin/luac, errors: 0, warnings: 0 -> VALIDATION PASSED
+lua5.4 tools/verify_v110.lua  # VERIFY_V110 PASSED: 40 checks (已适配 v2.0.0)
+lua5.4 tools/verify_v200.lua  # VERIFY_V200 PASSED: 71 checks
 ```
 
 `verify_v110.lua` 是 v1.1.0 新增的独立验证（不是原来那个返回 nil 技能的弱 smoke）：技能 mock 带 `IsNull()=false` 等真实方法，覆盖 channel 单体/范围、summon、aura/passive 跳过、escape、thinkDelay 节流（简单 0.5s / 困难 0.15s）、打盾分、插眼、15 级不查 -1 槽位、Invoker 上限、主属性计数、朗戈定位、连招窗口、集火、救人、选人协同、防重叠、信使。
@@ -247,20 +275,22 @@ lua5.4 tools/verify_v110.lua  # VERIFY_V110 PASSED: 40 checks
 4. **视野 / 烟雾 / 假眼博弈弱。** v1.1.0 已实现基础插眼（辅助背包有眼时按河道/己方野区/敌方野区轮换插眼）和信使送货，但买雾时机、反眼、精确眼位悬崖仍是基础规则，没有读敌方动向的博弈层。
 5. **肉山坑坐标是固定值。** `engine/macro.lua` 用的坑位坐标按 7.38+ 常规坑位写死，不同版本若移坑需改一处常量。
 6. **没有机器学习。** 这是规则 + 效用打分系统，不是 OpenAI Five 式强化学习；“AI”指 Bot AI，不指神经网络。
+7. **v2.0.0 仍没有 OHA 的这些：** 中立物品系统、多游戏模式（Turbo / AR / 队长模式等，本项目只按 AP 思路写）、Bot 聊天 / 游戏内指令（`!pick / !ban / !pos`）、小兵 / 召唤物独立微操、Rubick 偷技能等特殊英雄逻辑。Mode 文件是本项目自己写的 15 个，OHA 有 21 个 Mode 文件 + 8,429 行的通用技能入口 + 32k 行的 FretBots——深度仍有差距，见正文对比。
+8. **天赋是自选，不是官方推荐。** 10 个焦点英雄的天赋左右选择是本项目自选的可玩方案，其余按主属性通用表；不是逐版本的最优天赋。
 
 ## 更新流程（随版本更新）
 
 ```bash
-# 1. 改数据（只改这里）
+# 1. 改数据（只改这里；焦点英雄改 tools/focus_heroes.py）
 vim tools/heroes_data.py
-# 2. 重新生成（heroes.lua + 381 个文件全部重写）
+# 2. 重新生成（heroes.lua + talents.lua + 381 个文件 + 127 个 BotLib 文件全部重写）
 python3 tools/generate.py
-# 3. 校验 + 冒烟
+# 3. 校验 + 验证（两套都全过才算完）
 python3 tools/validate.py
-lua5.4 tools/smoke_test.lua
-lua5.4 tools/verify_v110.lua  # v1.1.0:40 项全过才算修完
+lua5.4 tools/verify_v110.lua  # v1.1.0 回归: 40 项
+lua5.4 tools/verify_v200.lua  # v2.0.0: 71 项
 ```
 
 ## 许可证
 
-本项目为社区 Bot 脚本，Dota 2 及英雄/物品名称版权归 Valve 所有。
+本项目为社区 Bot 脚本，Dota 2 及英雄/物品名称版权归 Valve 所有。架构方法致谢 Valve 官方 Bot API 文档与 Open Hyper AI (forest0xia, MIT) 的 ARCHITECTURE.md；本项目代码均为原创，未复制 OHA 或其上游代码。

@@ -3,8 +3,8 @@
 -- 规则:已有 1/2 号位就补 3/4/5;已有 4/5 号位就补核心;缺控制补控制。
 -- v1.1.0 新增选人协同:补位之外按 combos.lua 的经典组合加分,协同分最高的优先。
 -- 本文件由游戏在选人阶段调用,函数名 Think() 是 Bot 选人 API 的约定入口。
-local Heroes = require("bots/data/heroes")
-local Combos = require("bots/data/combos")
+local Heroes = require(GetScriptDirectory() .. "/data/heroes")
+local Combos = require(GetScriptDirectory() .. "/data/combos")
 
 local function alreadyPicked(picked, key)
   for _, k in ipairs(picked or {}) do

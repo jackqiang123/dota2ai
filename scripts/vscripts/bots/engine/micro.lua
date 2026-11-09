@@ -7,8 +7,8 @@ local Micro = {}
 
 Micro.PREDICT_DT = 0.3
 
-local Team = require("bots/engine/team")
-local Combos = require("bots/data/combos")
+local Team = require(GetScriptDirectory() .. "/engine/team")
+local Combos = require(GetScriptDirectory() .. "/data/combos")
 
 -- 引导类大招分组(按英雄 key,不猜技能名以外的东西):
 -- 单体引导:对最近敌方英雄放;范围引导:对敌方位置放。
