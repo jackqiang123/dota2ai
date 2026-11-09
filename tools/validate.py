@@ -83,6 +83,61 @@ def main():
         if api not in engine_text:
             warnings.append("engine does not mention %s" % api)
 
+    # 7. v1.1.0:主属性按官方 7.41f 计数 36 力 / 35 敏 / 34 智 / 22 全才。
+    from collections import Counter
+    attr_counts = Counter(h[3] for h in HEROES)
+    if dict(attr_counts) != {"str": 36, "agi": 35, "int": 34, "universal": 22}:
+        errors.append("primary_attr counts wrong: %s, expected str36/agi35/int34/universal22" % dict(attr_counts))
+
+    # 8. v1.1.0:Invoker 加点上限 Quas/Wex/Exort 各 7、Invoke 4;普通英雄每技能 <=4、大招 <=3。
+    for m in re.finditer(r"^\s{2}(\w+) = \{ key = .*?skill_build = \{([^}]*)\}", heroes_lua, re.M | re.S):
+        key, build_s = m.group(1), m.group(2)
+        build = [int(x) for x in build_s.replace(",", " ").split() if x.strip()]
+        if len(build) != 25:
+            errors.append("skill_build len!=25: %s" % key)
+            continue
+        counts = Counter(build)
+        counts.pop(0, None)
+        if key == "invoker":
+            if dict(counts) != {1: 7, 2: 7, 3: 7, 4: 4}:
+                errors.append("invoker skill_build counts wrong: %s" % dict(counts))
+            if build[1] != 4:
+                errors.append("invoker must level Invoke at level 2, got %s" % build)
+        else:
+            for slot, c in counts.items():
+                cap = 3 if slot == 4 else 4
+                if c > cap:
+                    errors.append("skill_build over cap: %s slot %d x%d" % (key, slot, c))
+
+    # 9. v1.1.0:AbilityLevelUpThink 必须显式跳过 SKILL_BUILD==0,禁止查询 -1 槽位。
+    sample = (bots / "ability_item_usage_axe.lua").read_text(encoding="utf-8")
+    if "SKILL_BUILD[lvl] == 0" not in sample:
+        errors.append("AbilityLevelUpThink missing explicit SKILL_BUILD==0 guard")
+
+    # 10. v1.1.0:难度造假已删——goldMul/xpMul 字段定义、1.25x 说法不得再出现。
+    # 注意:utility.lua 注释里解释“删掉了 goldMul/xpMul”是允许的,只查字段定义与数值说法。
+    for f in list(bots.rglob("*.lua")) + [root / "README.md", root / "addoninfo.txt"]:
+        if not f.exists():
+            continue
+        txt = f.read_text(encoding="utf-8", errors="replace")
+        if re.search(r"(goldMul|xpMul)\s*=", txt) or "1.25x" in txt or "1.25 / 1.25" in txt:
+            errors.append("goldMul/xpMul field or 1.25x claim still present in %s" % f.relative_to(root))
+
+    # 11. v1.1.0:combos 表存在、>=12 组、每组有 a/b/desc;互动入口存在。
+    combos_path = bots / "data" / "combos.lua"
+    if not combos_path.exists():
+        errors.append("missing data/combos.lua")
+    else:
+        combos_text = combos_path.read_text(encoding="utf-8")
+        n_combos = combos_text.count('score = ')
+        if n_combos < 12:
+            errors.append("combos <12 groups: %d" % n_combos)
+        for fn in ["ReportComboWindow", "GetFocusTarget", "ShouldHoldUlt",
+                   "TryRescueAlly", "TryPlaceWard", "TryDeliverCourier"]:
+            all_text = "".join((bots / "engine" / f).read_text(encoding="utf-8") for f in ["team.lua", "micro.lua", "core.lua"])
+            if fn not in all_text:
+                errors.append("missing interaction entry: %s" % fn)
+
     print("heroes: %d" % len(HEROES))
     print("per-hero files expected: %d" % (len(HEROES) * 3))
     print("errors: %d  warnings: %d" % (len(errors), len(warnings)))

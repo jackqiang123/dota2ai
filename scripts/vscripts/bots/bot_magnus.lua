@@ -1,4 +1,4 @@
--- bot_magnus.lua -- Magnus 马格纳斯 (str, offlane 路) -- 薄 wrapper,决策在 engine/core.lua。
+-- bot_magnus.lua -- Magnus 马格纳斯 (universal, offlane 路) -- 薄 wrapper,决策在 engine/core.lua。
 local Core = require("bots/engine/core")
 
 function Think()

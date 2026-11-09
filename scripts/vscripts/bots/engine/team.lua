@@ -1,6 +1,7 @@
 -- team.lua
 -- 团队黑板:5 个 Bot 共用一张全局表,互相写意图,不靠聊天轮盘。
 -- 黑板只存“意图 + 时间戳”,过期意图自动失效,避免死锁。
+-- v1.1.0 新增:连招窗口 ComboWindow、集火目标 FocusTarget。
 local Team = {}
 
 -- 全局黑板,同一局内所有 Bot 共享。
@@ -11,10 +12,28 @@ if _G.DOTA_AI_BLACKBOARD == nil then
     intent = {},
     lanes = {},
     roshanCalled = 0,
+    comboWindow = nil, -- { loc={x,y,z}, time=秒, caster=英雄名 } 或 nil
+    focusTarget = nil, -- { unit=敌方单位, hpPct=0-1, time=秒 } 或 nil
+    focusUnit = nil,
   }
 end
 
 function Team.GetBlackboard()
+  return _G.DOTA_AI_BLACKBOARD
+end
+
+-- 测试用:重置黑板(游戏内不调用,verify_v110 用它隔离各测试)。
+function Team.ResetBlackboard()
+  _G.DOTA_AI_BLACKBOARD = {
+    plan = "farm",
+    deadEnemies = 0,
+    intent = {},
+    lanes = {},
+    roshanCalled = 0,
+    comboWindow = nil,
+    focusTarget = nil,
+    focusUnit = nil,
+  }
   return _G.DOTA_AI_BLACKBOARD
 end
 
@@ -76,6 +95,7 @@ end
 
 -- 更新敌方阵亡数:由每个 Bot 的快照汇总,供 macro 打盾判断用。
 -- 这里用最近快照的敌方可见数做保守估计,不假设全图视野。
+-- v1.1.0:Core.Think 每帧都调它,之前是死代码。
 function Team.UpdateDeadEnemies(visibleEnemies, totalEnemyHeroes)
   local bb = Team.GetBlackboard()
   totalEnemyHeroes = totalEnemyHeroes or 5
@@ -85,6 +105,100 @@ function Team.UpdateDeadEnemies(visibleEnemies, totalEnemyHeroes)
   if est < 0 then est = 0 end
   if est > 2 then est = 2 end
   bb.deadEnemies = est
+  return est
+end
+
+-- ---- v1.1.0:连招窗口 ComboWindow ----
+-- 任一 Bot 放出大型先手/控制大招时调用,把位置+时间+释放者写进黑板。
+-- 窗口有效期 5 秒;5 秒内队友走向该位置参团、优先放 AoE 跟进。
+Team.COMBO_WINDOW_SECONDS = 5
+Team.COMBO_HOLD_SECONDS = 2 -- 窗口开启后 2 秒内,别人不重复放同类先手大
+
+function Team.ReportComboWindow(bot, loc)
+  local bb = Team.GetBlackboard()
+  if bot == nil or loc == nil then return false end
+  local name = ""
+  local ok, n = pcall(function() return bot:GetUnitName() end)
+  if ok then name = n or "" end
+  bb.comboWindow = { loc = loc, time = gameTime(), caster = name }
+  return true
+end
+
+function Team.GetComboWindow()
+  local bb = Team.GetBlackboard()
+  local w = bb.comboWindow
+  if w == nil then return nil end
+  if (gameTime() - (w.time or 0)) >= Team.COMBO_WINDOW_SECONDS then
+    bb.comboWindow = nil
+    return nil
+  end
+  return w
+end
+
+function Team.IsComboWindowActive()
+  return Team.GetComboWindow() ~= nil
+end
+
+-- 该 Bot 现在放同类先手大是否该忍住:窗口由别人开启、且开启不到 2 秒。
+function Team.ShouldHoldUlt(bot)
+  local w = Team.GetComboWindow()
+  if w == nil then return false end
+  local name = ""
+  if bot ~= nil then
+    local ok, n = pcall(function() return bot:GetUnitName() end)
+    if ok then name = n or "" end
+  end
+  if w.caster == name then return false end
+  return (gameTime() - (w.time or 0)) < Team.COMBO_HOLD_SECONDS
+end
+
+-- ---- v1.1.0:集火目标 FocusTarget ----
+-- 全队共享目标 = 所有 Bot 可见敌方里血量百分比最低的。
+-- 调用方每次传最新快照就重算;不传快照时返回 10 秒内有效的旧目标。
+local function unitHpPct(u)
+  if u == nil then return 1 end
+  local okA, alive = pcall(function() return u:IsAlive() end)
+  if okA and not alive then return 1 end
+  local hp, maxHp = 0, 1
+  local ok1, v1 = pcall(function() return u:GetHealth() end)
+  if ok1 then hp = v1 or 0 end
+  local ok2, v2 = pcall(function() return u:GetMaxHealth() end)
+  if ok2 then maxHp = v2 or 1 end
+  return hp / math.max(1, maxHp)
+end
+
+function Team.UpdateFocusTarget(snap)
+  local bb = Team.GetBlackboard()
+  if snap == nil or snap.nearbyEnemies == nil then return bb.focusUnit end
+  local best, bestPct = nil, 1
+  for _, e in ipairs(snap.nearbyEnemies) do
+    if e ~= nil then
+      local pct = unitHpPct(e)
+      -- 只选活着的(血量>0);pct==1 且满血也参与比较,由最低者胜出。
+      local okA, alive = pcall(function() return e:IsAlive() end)
+      if (not okA) or alive then
+        if pct < bestPct or best == nil then
+          best, bestPct = e, pct
+        end
+      end
+    end
+  end
+  if best ~= nil then
+    bb.focusUnit = best
+    bb.focusTarget = { unit = best, hpPct = bestPct, time = gameTime() }
+  end
+  return bb.focusUnit
+end
+
+function Team.GetFocusTarget(snap)
+  if snap ~= nil then return Team.UpdateFocusTarget(snap) end
+  local bb = Team.GetBlackboard()
+  if bb.focusUnit == nil then return nil end
+  if (gameTime() - ((bb.focusTarget or {}).time or 0)) > 10 then
+    bb.focusUnit, bb.focusTarget = nil, nil
+    return nil
+  end
+  return bb.focusUnit
 end
 
 return Team

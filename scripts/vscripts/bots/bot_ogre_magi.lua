@@ -1,4 +1,4 @@
--- bot_ogre_magi.lua -- Ogre Magi 食人魔魔法师 (int, support 路) -- 薄 wrapper,决策在 engine/core.lua。
+-- bot_ogre_magi.lua -- Ogre Magi 食人魔魔法师 (str, support 路) -- 薄 wrapper,决策在 engine/core.lua。
 local Core = require("bots/engine/core")
 
 function Think()

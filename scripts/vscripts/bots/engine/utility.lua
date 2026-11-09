@@ -1,6 +1,8 @@
 -- utility.lua
 -- 效用决策层:对每个候选行为算 Desire(0~1),选最高分执行。
 -- 权重全部放在 Difficulty / heroData 里,可离线调参后导出,不写死在 if-else 里。
+local Team = require("bots/engine/team")
+
 local Utility = {}
 
 Utility.BEHAVIORS = {
@@ -9,12 +11,15 @@ Utility.BEHAVIORS = {
 }
 
 -- 难度调参表:反应延迟越低、阈值越宽松,Bot 越强。
--- 疯狂档的 gold/xp 系数是公开的作弊加成,写在 README 里,不藏。
+-- v1.1.0 诚实说明:删掉了 v1.0 的 goldMul/xpMul。Lua Bot 脚本没有给 Bot 发
+-- 金钱/经验的 API,v1.0 所谓疯狂档金钱经验加成是纸面数字,从未生效。真正的引擎级
+-- Unfair 由房间难度控制;本项目 Unfair 只靠反应延迟和决策阈值区分。
+-- thinkDelay 由 Core.Think 真正执行节流,不是只写在表里。
 Utility.DIFFICULTY = {
-  [1] = { name = "easy",    thinkDelay = 0.50, lasthitMargin = 25, retreatHp = 0.55, aggression = 0.35, goldMul = 1.0, xpMul = 1.0 },
-  [2] = { name = "medium",  thinkDelay = 0.30, lasthitMargin = 12, retreatHp = 0.45, aggression = 0.55, goldMul = 1.0, xpMul = 1.0 },
-  [3] = { name = "hard",    thinkDelay = 0.15, lasthitMargin = 5,  retreatHp = 0.35, aggression = 0.75, goldMul = 1.0, xpMul = 1.0 },
-  [4] = { name = "unfair",  thinkDelay = 0.10, lasthitMargin = 0,  retreatHp = 0.25, aggression = 0.95, goldMul = 1.25, xpMul = 1.25 },
+  [1] = { name = "easy",    thinkDelay = 0.50, lasthitMargin = 25, retreatHp = 0.55, aggression = 0.35 },
+  [2] = { name = "medium",  thinkDelay = 0.30, lasthitMargin = 12, retreatHp = 0.45, aggression = 0.55 },
+  [3] = { name = "hard",    thinkDelay = 0.15, lasthitMargin = 5,  retreatHp = 0.35, aggression = 0.75 },
+  [4] = { name = "unfair",  thinkDelay = 0.10, lasthitMargin = 0,  retreatHp = 0.25, aggression = 0.95 },
 }
 
 function Utility.GetDifficulty()
@@ -125,6 +130,11 @@ function Utility.Score(bot, snap, heroData, gameTime)
       teamfight = 0.7
     end
   end
+  -- v1.1.0 连招窗口:队友刚开先手大(5 秒内),参团分 +0.25,去窗口位置跟进。
+  -- 黑板上没窗口时这项为 0,不影响平时的打分。
+  if Team.IsComboWindowActive() then
+    teamfight = teamfight + 0.25
+  end
   scores.teamfight = clamp01(teamfight)
 
   -- 打肉山:20 分钟后、我方人数占优、敌方减员时才考虑;不靠定时器硬打。
@@ -134,9 +144,11 @@ function Utility.Score(bot, snap, heroData, gameTime)
   end
   scores.roshan = clamp01(roshan)
 
-  -- 插眼:辅助、身上有眼、附近无眼时才插(由 micro 层判断是否带眼)。
+  -- 插眼:辅助、身上有眼时才插(由 micro 层判断是否带眼)。
+  -- v1.1.0:分数提到 0.4,高于 4/5 号位无敌无刀时的刷钱分(0.35),否则 ward
+  -- 永远赢不了、Core 里的插眼分支是死代码。
   scores.ward = 0
-  if (role == 4 or role == 5) and t > 60 then scores.ward = 0.3 end
+  if (role == 4 or role == 5) and t > 60 then scores.ward = 0.4 end
 
   -- 选最高分;撤退/回家是硬优先级,分数超过 0.8 直接胜出。
   local best = "farm"

@@ -20,6 +20,7 @@ function AbilityLevelUpThink()
   if not okPts or pts == nil or pts <= 0 then return end
   local okLvl, lvl = pcall(function() return bot:GetLevel() end)
   if not okLvl or lvl == nil or lvl < 1 or lvl > #SKILL_BUILD then return end
+  if SKILL_BUILD[lvl] == 0 then return end  -- v1.1.0:该级无技能可点(天赋点),显式跳过,禁止查询 -1 槽位。
   local slot = SKILL_BUILD[lvl] - 1
   local ability = Micro.GetAbility(bot, slot)
   if ability == nil then return end

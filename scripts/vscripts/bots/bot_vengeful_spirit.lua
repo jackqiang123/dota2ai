@@ -1,4 +1,4 @@
--- bot_vengeful_spirit.lua -- Vengeful Spirit 复仇之魂 (int, support 路) -- 薄 wrapper,决策在 engine/core.lua。
+-- bot_vengeful_spirit.lua -- Vengeful Spirit 复仇之魂 (agi, support 路) -- 薄 wrapper,决策在 engine/core.lua。
 local Core = require("bots/engine/core")
 
 function Think()

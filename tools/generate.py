@@ -36,19 +36,17 @@ def dedup(seq):
     return out
 
 
+INVOKER_SKILL_BUILD = [1, 4, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 4, 4, 4, 2]
+# Invoker 显式 25 级表:Quas(1)/Wex(2)/Exort(3)各 7 级,Invoke(4) 4 级,合计 25。
+# Invoke 尽早点 1 级(2 级),之后按 Quas/Wex/Exort 循环,任何一级都不点已满级技能。
+# 计数:1->7, 2->7, 3->7, 4->4。validate.py 会断言这些上限。
+
+
 def skill_build(priority, n_abilities):
     """生成 1-25 级加点表:6/11/16 点大招,其余按优先级点满(每技能最多 4 级)。
-    Invoker(6 个技能位)特殊处理:前 4 位循环加点。"""
+    Invoker(6 个技能位)用上面显式表,不再 1,2,3,4 循环。"""
     if n_abilities > 4:
-        build, counts = [], [0] * n_abilities
-        order = [1, 2, 3, 4]
-        i = 0
-        for lvl in range(1, 26):
-            # Invoker 的 Invoke(第 4 位)尽早点 1 级,之后循环。
-            pick = order[i % len(order)]
-            i += 1
-            build.append(pick)
-        return build
+        return list(INVOKER_SKILL_BUILD)
     counts = {1: 0, 2: 0, 3: 0, 4: 0}
     build = []
     pi = 0
@@ -157,6 +155,7 @@ def main():
             "  if not okPts or pts == nil or pts <= 0 then return end\n"
             "  local okLvl, lvl = pcall(function() return bot:GetLevel() end)\n"
             "  if not okLvl or lvl == nil or lvl < 1 or lvl > #SKILL_BUILD then return end\n"
+            "  if SKILL_BUILD[lvl] == 0 then return end  -- v1.1.0:该级无技能可点(天赋点),显式跳过,禁止查询 -1 槽位。\n"
             "  local slot = SKILL_BUILD[lvl] - 1\n"
             "  local ability = Micro.GetAbility(bot, slot)\n"
             "  if ability == nil then return end\n"

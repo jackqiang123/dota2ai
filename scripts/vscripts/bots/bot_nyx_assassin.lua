@@ -1,4 +1,4 @@
--- bot_nyx_assassin.lua -- Nyx Assassin 司夜刺客 (agi, roam 路) -- 薄 wrapper,决策在 engine/core.lua。
+-- bot_nyx_assassin.lua -- Nyx Assassin 司夜刺客 (universal, roam 路) -- 薄 wrapper,决策在 engine/core.lua。
 local Core = require("bots/engine/core")
 
 function Think()

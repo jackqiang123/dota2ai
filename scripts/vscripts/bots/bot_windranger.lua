@@ -1,4 +1,4 @@
--- bot_windranger.lua -- Windranger 风行者 (int, mid 路) -- 薄 wrapper,决策在 engine/core.lua。
+-- bot_windranger.lua -- Windranger 风行者 (universal, mid 路) -- 薄 wrapper,决策在 engine/core.lua。
 local Core = require("bots/engine/core")
 
 function Think()

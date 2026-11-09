@@ -1,4 +1,4 @@
--- bot_dazzle.lua -- Dazzle 戴泽 (int, support 路) -- 薄 wrapper,决策在 engine/core.lua。
+-- bot_dazzle.lua -- Dazzle 戴泽 (universal, support 路) -- 薄 wrapper,决策在 engine/core.lua。
 local Core = require("bots/engine/core")
 
 function Think()

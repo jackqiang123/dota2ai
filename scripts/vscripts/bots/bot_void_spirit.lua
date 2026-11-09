@@ -1,4 +1,4 @@
--- bot_void_spirit.lua -- Void Spirit 虚无之灵 (int, mid 路) -- 薄 wrapper,决策在 engine/core.lua。
+-- bot_void_spirit.lua -- Void Spirit 虚无之灵 (universal, mid 路) -- 薄 wrapper,决策在 engine/core.lua。
 local Core = require("bots/engine/core")
 
 function Think()

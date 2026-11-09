@@ -1,4 +1,4 @@
--- bot_largo.lua -- Largo 朗戈 (str, offlane 路) -- 薄 wrapper,决策在 engine/core.lua。
+-- bot_largo.lua -- Largo 朗戈 (str, support 路) -- 薄 wrapper,决策在 engine/core.lua。
 local Core = require("bots/engine/core")
 
 function Think()
