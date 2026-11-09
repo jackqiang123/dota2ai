@@ -37,6 +37,81 @@ function Utility.SetDifficulty(level)
   _G.DOTA_AI_DIFFICULTY = level
 end
 
+-- 兵线落点 (简化坐标, 模拟与实战共用): 本路交汇点在己方半场, 推进点在敌方半场。
+-- lane 取 "top" / "mid" / "bot", team 取 2 (Radiant) / 3 (Dire)。
+function Utility.GetLaneMeetingPoint(lane, team)
+  if lane == "top" then return { x = -6800, y = 6800, z = 0 } end
+  if lane == "bot" then return { x = 6800, y = -6800, z = 0 } end
+  return { x = 0, y = 0, z = 0 }
+end
+
+function Utility.GetLanePushPoint(lane, team)
+  if lane == "mid" then
+    if team == 3 then return { x = -5000, y = -5000, z = 0 } end
+    return { x = 5000, y = 5000, z = 0 }
+  end
+  if team == 3 then return { x = -6800, y = -6800, z = 0 } end
+  return { x = 6800, y = 6800, z = 0 }
+end
+
+-- 等兵落点 (棘轮式推进): 平时回本路交汇点; 如果已经在交汇点附近 (300 内)
+-- 或已经在线上越过交汇点, 就从当前位置再向敌方半场前进 600 (不超过推进点)。
+-- 固定交汇点会让英雄在两波兵之间原地等到卡住 (模拟实测: 两波兵的交战点
+-- 固定, 英雄站在那儿有打不完的小兵, 60 秒以上零位移)。
+function Utility.GetLaneWaitPoint(bot, snap)
+  local lane = Utility.GetHeroLane(bot, snap)
+  local team = 2
+  if snap ~= nil and snap.team ~= nil then team = snap.team end
+  local meet = Utility.GetLaneMeetingPoint(lane, team)
+  local push = Utility.GetLanePushPoint(lane, team)
+  local loc = nil
+  if snap ~= nil then loc = snap.location end
+  if loc ~= nil then
+    local dx = push.x - meet.x
+    local dy = push.y - meet.y
+    local plen = math.sqrt(dx * dx + dy * dy)
+    if plen > 0 then
+      -- 沿兵线方向的投影: >0 表示已在交汇点或越过交汇点。
+      local proj = (loc.x - meet.x) * dx + (loc.y - meet.y) * dy
+      local ndx = loc.x - meet.x
+      local ndy = loc.y - meet.y
+      local nearMeet = math.sqrt(ndx * ndx + ndy * ndy) <= 300
+      if proj > 0 or nearMeet then
+        -- 从当前位置向推进点前进 600, 不越过推进点。
+        local remx = push.x - loc.x
+        local remy = push.y - loc.y
+        if math.sqrt(remx * remx + remy * remy) <= 600 then
+          return { x = push.x, y = push.y, z = 0 }
+        end
+        return { x = loc.x + dx / plen * 600, y = loc.y + dy / plen * 600, z = 0 }
+      end
+    end
+  end
+  return meet
+end
+
+-- 由 Bot 反推本路: 读 data/heroes 的 lane 字段 (offlane/safelane/support/mid),
+-- 按队伍换算成 top/mid/bot。
+function Utility.GetHeroLane(bot, snap)
+  local lane = "mid"
+  local ok, uname = pcall(function() return bot:GetUnitName() end)
+  if ok and uname ~= nil then
+    local Heroes = require(GetScriptDirectory() .. "/data/heroes")
+    local key = string.gsub(uname, "^npc_dota_hero_", "")
+    local hd = Heroes[key]
+    if hd ~= nil and hd.lane ~= nil then
+      local team = 2
+      if snap ~= nil and snap.team ~= nil then team = snap.team end
+      if hd.lane == "offlane" then
+        lane = (team == 2) and "top" or "bot"
+      elseif hd.lane == "safelane" or hd.lane == "support" then
+        lane = (team == 2) and "bot" or "top"
+      end
+    end
+  end
+  return lane
+end
+
 local function clamp01(x)
   if x < 0 then return 0 end
   if x > 1 then return 1 end

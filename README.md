@@ -2,7 +2,9 @@
 
 一整套、可安装、可跑的 Dota 2 Workshop Bot AI。**不是 124 份手写脚本**，而是 Valve 原生 Team / Mode / Action 三层结构 + 一张英雄数据表 + 生成器。
 
-> 版本：**v3.0.0**（2026-11-09）| 版本基准：**7.41f，127 名英雄**。
+> 版本：**v3.1.0**（2026-11-09）| 版本基准：**7.41f，127 名英雄**。
+>
+> **v3.1.0 更新日志：**新增 `tools/integration/`：可重复运行的 5v5 全局模拟 integration 环境（`sim.lua` 世界模型 + `valve_api.lua` 模拟 Valve Bot API + `run.lua` 一条命令跑一局并出报告 + `last_run.md`），真 Bot 脚本进模拟对局全流程跑，9 个门控全过（种子 42：Radiant 20:02 基地胜，人头 10:2，推塔 7:7，0 Lua 错误，0 卡住，0 泉水挂机，打盾计划 67 tick）。模拟跑出的 Bot bug 全部修掉：(1) `Valve.cast` 丢英雄目标（Lion 满蓝 0 施放）；(2) 加点把攒的点全砸进同一技能，改成由（等级 − 剩余点数）推出 build 位置依次点，天赋级按天赋表点（旧版 10 级天赋永远点不上）；(3) 大招加点 6/11/16 是 7.00 前规则，改成 6/12/18 并重生成；(4) per-hero wrapper 从不调 `TryUseItems` 且天赋级直接 return，补上；(5) defend/push/laning/retreat/team_roam/roshan/attack/roam/defend_tower 等 9 个 Mode 的站桩/折返/无指令落点全部修掉（等兵落点棘轮式推进、撤退粘性目标、打盾攻击移动等），详见 `tools/integration/README.md`；(6) 打盾时间门三处（TeamThink / Macro / mode_roshan）从 20:00 统一放宽到 10:00，打盾目标改取肉山实际坑位（模拟扩展 `GetRoshanLocation()`）。v3.0.0 的全部内容保留，见下文。
 >
 > **v3.0.0 更新日志：**127 个英雄全部写满真实 Consider 逻辑，不再是 10 个焦点 + 117 个通用 fallback——(1) 新增 `tools/all_heroes.py`（全量第二事实源：10 个 v2.0 焦点 + 117 个新写，`tools/all_heroes_a.py`..`f.py` 六组），生成器改用全量数据，BotLib 共 15,386 行（v2.0 约 4,006 行）；每个英雄至少 2 个非被动 Consider（54 个 4 个、62 个 3 个、9 个 2 个；Wraith King 当前版本只有 Q 一个主动技能，是唯一 1 个的例外；Invoker 另有 8 个 invoked 技能 Consider）；(2) 天赋：127 个英雄各自的天赋选择，`GENERIC_TALENTS` 按主属性通用表已删除；(3) 出装：`sBuyList` 五个位置互不相同，主位置 ≥12 件、每位置 ≥8 件，另加分位置 `sSellListByPos`（购买状态机目前只读 `sBuyList`，卖出表为数据预留）；(4) 技能名：`tools/skill_names_reference.json`（d2vpk `npc_heroes.txt` / `npc_abilities.txt` 为底，2023 年前快照）经 6 组人工标记后在整合时订正 15 处过时名（兽王 R 原始咆哮、上古巨神 R 大地分裂、凤凰 R 超新星、力丸 W 诡计之雾、巫妖 E 邪恶凝视、玛西 Q 摔跤行者、修补匠 E 防御矩阵、工程师 E 自爆炸弹、克林克兹 E 骷髅漫步、全能骑士 W 天堂恩赐、死亡先知 E 灵魂吸取、卓尔 E 多重射击、暗影恶魔 R 恶魔净化、原始野兽 Q/W/E 槽位顺序、戴泽 R 编织；哈斯卡 Q 以焦点文件为准为 Inner Fire）；Largo、Kez 的内部名仍为按 Valve 命名规则推断、未在新版 d2vpk 中核对（见各英雄 limitations）；(5) 引擎小修：`Skill.Cast` 的 location 分支接受原始位置表 `{x,y,z}`（Techies 脚下布雷等传 `snap.location` 的分支此前会静默失败）；(6) 新增 `tools/verify_v300.lua`（147 项：127 个英雄逐个在 7 个构造场景里验证至少一个 Consider desire > 0.5 且 SkillsComplement 真正施放 + 技能名一致 + 五位置出装 + 天赋 127 条 + Mode/互动回归）；`validate.py` 新增 v3.0 检查（BotLib 全有 Consider 且 ≥2 非被动、五位置不全同、天赋 127 条且无通用表残留、技能名在核对表里、BotLib 内无 `TryCastByType` 调用）。fallback 只保留作兜底：`SkillsComplement` 全返回 0 时 `ability_item_usage` wrapper 才走 `Micro.TryCastByType`，触发率目标为 0。v2.0.0 的架构与修复全部保留，见下文。
 >
@@ -117,7 +119,7 @@ tools/
 
 没有任何一档有金钱/经验加成：Lua Bot 脚本没有发金钱/经验的 API，v1.0 表里的金钱经验系数是纸面数字，v1.1.0 已删除。难度只靠反应延迟、补刀容错、撤退阈值、激进程度区分；想要引擎级数值加成的 Unfair，请用房间难度设置。
 
-## 校验结果（本机实测，2026-11-09，v3.0.0）
+## 校验结果（本机实测，2026-11-09，v3.1.0）
 
 ```bash
 python3 tools/generate.py   # heroes: 127 / per-hero files: 381 + BotLib 127 / deep heroes (real Consider): 127 / 127
@@ -127,12 +129,45 @@ lua5.4 tools/verify_v200.lua  # VERIFY_V200 PASSED: 71 checks
 lua5.4 tools/verify_v300.lua  # VERIFY_V300 PASSED: 147 checks
 python3 tools/generate.py && python3 tools/generate.py  # 两次重跑 diff 为 0
 find scripts -name "*.lua" -exec luac -p {} +  # 539 个文件 0 错误
+lua5.4 tools/integration/run.lua  # 40 分钟 5v5 模拟对局，9 个门控全 PASS（见下）
 ```
 
 `verify_v110.lua` 是 v1.1.0 新增的独立验证（不是原来那个返回 nil 技能的弱 smoke）：技能 mock 带 `IsNull()=false` 等真实方法，覆盖 channel 单体/范围、summon、aura/passive 跳过、escape、thinkDelay 节流（简单 0.5s / 困难 0.15s）、打盾分、插眼、15 级不查 -1 槽位、Invoker 上限、主属性计数、朗戈定位、连招窗口、集火、救人、选人协同、防重叠、信使。
 
 - `luac`：本机已装 Lua 5.4.6（`apt-get install lua5.4`），用的是真 `luac -p`，不是 Python 括号检查。
 - 冒烟测试用 mock Bot（假的 `GetBot / DotaTime / GetItemCost`）跑通了 `Core.Think`、选人补位和三个英雄的 `Think()`。**这不是真机对局测试**——真机测试仍需在 Dota 2 里建房间跑（见“已知限制”）。
+
+## Integration 测试：5v5 模拟对局（v3.1.0 新增）
+
+`tools/integration/`：把真 Bot 脚本放进一局模拟对局全流程跑，测单元测试
+测不出的东西（卡住、死循环、打盾不去、买装卡死）。一条命令：
+
+```bash
+lua5.4 tools/integration/run.lua   # 默认 40 分钟、种子 42、难度 3；报告写 tools/integration/last_run.md
+```
+
+默认阵容 Radiant Axe/Zeus/Lion/Crystal Maiden/Magnus 对 Dire
+Sven/Dazzle/Enigma/Faceless Void/Huskar。`sim.lua` 是 5v5 世界模型
+（三路兵线、塔、金钱/经验、野区、Roshan、视野、击杀/复活、基地胜负）；
+`valve_api.lua` 模拟 Valve Bot API（`GetNearby*` 只返回视野内单位，
+`Action_*` 真正改变世界）；`run.lua` 每 tick 按
+`TeamThink -> 各 Bot Think -> AbilityUsageThink / ItemPurchaseThink` 的
+顺序调用，每个 Bot 调用包 `pcall` + 指令数上限，跑完出 9 个门控的报告。
+
+**一局的结果（种子 42，2026-11-09）：Radiant 胜，基地摧毁，20:02；
+人头 10:2；推塔 7:7；团战 12 场（11 场 ≥2 人）；0 Lua 错误；0 卡住；
+0 泉水挂机；打盾计划触发 67 tick（首次 10:25），肉山击杀 0**（打盾
+逻辑触发了，但本局唯一成行的打盾是单人前往、途中被击杀——队伍协同
+仍是短板）。每 Bot 都有移动/攻击/买装/升级（例：Zeus 17 级，55 补刀，
+201 命中，27 次施放，57 件买装）。重跑同一命令结果完全一致（除 wall
+time 外报告逐字相同）。
+
+> **模拟结果不是真机结果。** 胜负、人头、补刀只说明 Bot 脚本在模拟世界里
+> 能跑通、无卡住无报错，不能说成真机 Dota 2 的强度结论。已知简化
+> （技能/物品数值为近似值、无真实弹道、无中立物品、无聊天、双方共用
+> 一个黑板、肉山坑边自动攻击规则、模拟扩展 `GetRoshanLocation()` 等）
+> 见 `tools/integration/README.md`，模拟里修掉的 13 个 Bot bug 也在那里
+> 逐条列出。
 
 ## 英雄覆盖表（127 名，全部）
 

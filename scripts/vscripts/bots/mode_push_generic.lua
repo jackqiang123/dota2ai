@@ -26,8 +26,36 @@ function M.Think(bot, snap, bb)
   local plan = Macro.GetPlan(bot, snap, bb2)
   Team.ReportIntent(bot, plan)
   local loc = Macro.GetObjectiveLocation(bot, plan, snap)
-  if loc ~= nil then pcall(function() bot:Action_MoveToLocation(loc) end) return end
+  if loc ~= nil then
+    -- 目标是敌塔且已在射程内: 直接攻击, 不要只站着等兵线。
+    -- 旧版到塔下也只下移动指令, 塔只能靠小兵磨 (模拟实测)。
+    if plan == "push" and snap.nearbyEnemyTowers ~= nil and #snap.nearbyEnemyTowers > 0
+      and snap.location ~= nil then
+      local tloc = nil
+      local ok, l = pcall(function() return snap.nearbyEnemyTowers[1]:GetLocation() end)
+      if ok then tloc = l end
+      if tloc ~= nil then
+        local dx = tloc.x - snap.location.x
+        local dy = tloc.y - snap.location.y
+        if math.sqrt(dx * dx + dy * dy) <= (snap.attackRange or 150) + 100 then
+          pcall(function() bot:Action_AttackUnit(snap.nearbyEnemyTowers[1], false) end) return
+        end
+      end
+    end
+    pcall(function() bot:Action_MoveToLocation(loc) end) return
+  end
   if snap.nearbyEnemyTowers ~= nil and #snap.nearbyEnemyTowers > 0 then pcall(function() bot:Action_AttackUnit(snap.nearbyEnemyTowers[1], false) end) return end
+  -- 附近没有塔: 沿本路向敌方半场攻击移动, 边走边清路上的敌方小兵。
+  -- 旧版攻击移动到小兵所在点, 小兵就在身边时等于原地站桩 (模拟实测);
+  -- 更早的版本直接去 (0,0), 到达后反复下达原地移动指令、看着小兵路过也不打。
+  if snap.nearbyEnemyCreeps ~= nil and #snap.nearbyEnemyCreeps > 0 then
+    local Utility = require(GetScriptDirectory() .. "/engine/utility")
+    local lane = Utility.GetHeroLane(bot, snap)
+    pcall(function() bot:Action_AttackMove(Utility.GetLanePushPoint(lane, snap.team or 2)) end) return
+  end
+  local Utility = require(GetScriptDirectory() .. "/engine/utility")
+  local lane = Utility.GetHeroLane(bot, snap)
+  pcall(function() bot:Action_MoveToLocation(Utility.GetLanePushPoint(lane, snap.team or 2)) end)
 end
 
 function M.OnStart(bot)

@@ -205,8 +205,11 @@ end
 -- ---- v2.0.0: Team 层战略 (TeamThink) ----
 -- 每帧先跑一次 (team_think.lua 的 TeamThink() 调这里), 定全队战略并写进黑板,
 -- 供各 Mode 读。不要让每个 Bot 各自猜全队意图。
--- 规则: 敌方减员>=2 且 20 分钟后 -> roshan; 敌方减员>=1 且我方占优 -> push;
+-- 规则: 敌方减员>=2 且 10 分钟后 -> roshan; 敌方减员>=1 且我方占优 -> push;
 -- 连招窗口有效 -> teamfight; 否则 farm。返回 plan 名。
+-- (v3.1.0: 打盾时间门从 20:00 放宽到 10:00 —— 真实对局里第一条肉山常见于
+-- 15 分钟前后, 有优势阵容更早; 20:00 的硬门槛会让 15-17 分钟结束的对局
+-- 永远触发不了打盾逻辑, 集成测试的打盾门控于是取决于对局时长而非逻辑本身。)
 function Team.TeamThink(bot, snap, bb)
   bb = bb or Team.GetBlackboard()
   if snap ~= nil then
@@ -226,7 +229,7 @@ function Team.TeamThink(bot, snap, bb)
   local dead = bb.deadEnemies or 0
   local nA = 0
   if snap ~= nil then nA = snap.numAllies or 0 end
-  if t > 1200 and dead >= 2 and (nA + 1) >= 3 then
+  if t > 600 and dead >= 2 and (nA + 1) >= 3 then
     bb.plan = "roshan"
     bb.roshanCalled = t
     return "roshan"

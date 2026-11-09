@@ -112,9 +112,12 @@ def main():
                 if c > cap:
                     errors.append("skill_build over cap: %s slot %d x%d" % (key, slot, c))
 
-    # 9. v1.1.0:AbilityLevelUpThink 必须显式跳过 SKILL_BUILD==0,禁止查询 -1 槽位。
+    # 9. v1.1.0:AbilityLevelUpThink 必须显式处理 SKILL_BUILD==0 (天赋级/已满级空位),
+    # 禁止查询 -1 槽位。v3.1.0: 加点位置由 (等级-剩余点数) 推出 (idx),
+    # 守卫形式是 SKILL_BUILD[idx] == 0, 意图与旧版 SKILL_BUILD[lvl] == 0 相同;
+    # verify_v110 4a 直接断言 15 级不查询 -1 槽位。
     sample = (bots / "ability_item_usage_axe.lua").read_text(encoding="utf-8")
-    if "SKILL_BUILD[lvl] == 0" not in sample:
+    if "SKILL_BUILD[idx] == 0" not in sample:
         errors.append("AbilityLevelUpThink missing explicit SKILL_BUILD==0 guard")
 
     # 10. v1.1.0:难度造假已删——goldMul/xpMul 字段定义、1.25x 说法不得再出现。
@@ -267,6 +270,41 @@ def main():
         errors.append("tools/verify_v300.lua missing")
     if not (root / "tools" / "all_heroes.py").exists():
         errors.append("tools/all_heroes.py missing")
+
+    # 20. v3.1.0: integration 环境齐全 —— sim / valve_api / run / README 存在;
+    # luac 过 integration 文件 (注意: 检查 1 的 luac 只扫 bots 目录, 这里单独扫);
+    # 不得有 /home/hatch 硬编码 (run.lua 用 arg[0] 推导仓库根目录);
+    # 版本号 3.1.0 (addoninfo.txt + 主 README 含 integration 一节)。
+    # 注意: validate.py 里不跑完整对局 (那是 run.lua 的事, 40 分钟太长),
+    # 只做存在性 / 语法 / 路径 / 版本检查。
+    integ = root / "tools" / "integration"
+    for name in ["sim.lua", "valve_api.lua", "run.lua", "README.md"]:
+        if not (integ / name).exists():
+            errors.append("tools/integration/%s missing" % name)
+    if luac:
+        for name in ["sim.lua", "valve_api.lua", "run.lua"]:
+            f = integ / name
+            if f.exists():
+                r = subprocess.run([luac, "-p", str(f)], capture_output=True, text=True)
+                if r.returncode != 0:
+                    errors.append("luac FAIL tools/integration/%s: %s" % (name, (r.stderr or r.stdout).strip()))
+    for name in ["sim.lua", "valve_api.lua", "run.lua"]:
+        f = integ / name
+        if f.exists():
+            txt = f.read_text(encoding="utf-8", errors="replace")
+            if "/home/hatch" in txt or "/home/" in txt:
+                errors.append("tools/integration/%s contains hardcoded /home/ path" % name)
+    addoninfo = (root / "addoninfo.txt").read_text(encoding="utf-8", errors="replace")
+    if '"3.1.0"' not in addoninfo:
+        errors.append("addoninfo.txt is not 3.1.0")
+    main_readme = (root / "README.md").read_text(encoding="utf-8", errors="replace")
+    if "v3.1.0" not in main_readme or "tools/integration" not in main_readme:
+        errors.append("main README missing v3.1.0 / integration section")
+    run_txt = ""
+    if (integ / "run.lua").exists():
+        run_txt = (integ / "run.lua").read_text(encoding="utf-8", errors="replace")
+    if "arg[0]" not in run_txt:
+        errors.append("tools/integration/run.lua does not derive repo root from arg[0]")
 
     print("heroes: %d" % len(HEROES))
     print("per-hero files expected: %d" % (len(HEROES) * 3))

@@ -22,6 +22,29 @@ function M.Think(bot, snap, bb)
   local window = Team.GetComboWindow()
   if window ~= nil and window.loc ~= nil then pcall(function() bot:Action_MoveToLocation(window.loc) end) return end
   if snap.nearestEnemy ~= nil then pcall(function() bot:Action_MoveToUnit(snap.nearestEnemy) end) return end
+  -- 没有连招窗口、看不到敌人: 去找最近的队友抱团, 不要原地干站。
+  -- 旧版此时不下任何指令, 但 GetDesire 保底 0.2 会让它在无目标时长期胜出并站桩 (模拟实测)。
+  if snap.nearbyAllies ~= nil and #snap.nearbyAllies > 0 then
+    -- 跟的队友如果已经在身边且不再移动, 再跟下去就是站桩 (会继承对方的卡住):
+    -- 改去等兵落点 (棘轮式推进)。
+    local ally = snap.nearbyAllies[1]
+    local ad = nil
+    if snap.location ~= nil then
+      local ok, aloc = pcall(function() return ally:GetLocation() end)
+      if ok and aloc ~= nil then
+        local dx = aloc.x - snap.location.x
+        local dy = aloc.y - snap.location.y
+        ad = math.sqrt(dx * dx + dy * dy)
+      end
+    end
+    if ad ~= nil and ad <= 150 then
+      local Utility = require(GetScriptDirectory() .. "/engine/utility")
+      pcall(function() bot:Action_MoveToLocation(Utility.GetLaneWaitPoint(bot, snap)) end) return
+    end
+    pcall(function() bot:Action_MoveToUnit(ally) end) return
+  end
+  local Utility = require(GetScriptDirectory() .. "/engine/utility")
+  pcall(function() bot:Action_MoveToLocation(Utility.GetLaneWaitPoint(bot, snap)) end)
 end
 
 function M.OnStart(bot)

@@ -18,7 +18,9 @@ end
 
 function M.Think(bot, snap, bb)
   if snap.nearestEnemy ~= nil then pcall(function() bot:Action_MoveToUnit(snap.nearestEnemy) end) return end
-  pcall(function() bot:Action_MoveToLocation({ x = 0, y = 0, z = 0 }) end)
+  -- 看不到敌人: 去等兵落点巡逻, 不要在 (0,0) 原地干站。
+  local Utility = require(GetScriptDirectory() .. "/engine/utility")
+  pcall(function() bot:Action_MoveToLocation(Utility.GetLaneWaitPoint(bot, snap)) end)
 end
 
 function M.OnStart(bot)

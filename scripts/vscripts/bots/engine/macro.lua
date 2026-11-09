@@ -50,7 +50,8 @@ function Macro.Evaluate(bot, snap, blackboard)
   end
 
   local roshanScore = 0
-  if t > 1200 and hp > 0.6 and (nA + 1) >= 3 and deadEnemies >= 1 then
+  -- v3.1.0: 打盾时间门从 20:00 放宽到 10:00, 与 TeamThink / mode_roshan 一致。
+  if t > 600 and hp > 0.6 and (nA + 1) >= 3 and deadEnemies >= 1 then
     roshanScore = 0.65
     if deadEnemies >= 2 then roshanScore = roshanScore + 0.2 end
   end
@@ -92,7 +93,13 @@ end
 -- 肉山坑坐标为游戏内固定点,不同版本略有偏移,此处用 7.38+ 的常规坑位。
 function Macro.GetObjectiveLocation(bot, plan, snap)
   if plan == "roshan" then
-    -- Roshan 坑:radiant 方 (-1800, -1700) 附近,dire 方镜像;用己方半场坑位简化。
+    -- 肉山实际坑位: 优先用模拟扩展 GetRoshanLocation (肉山活着才有位置)。
+    -- 没有它时 (真实对局 / 单元测试 mock), 回落到己方半场坑位。
+    local okR, rloc = pcall(function()
+      if GetRoshanLocation ~= nil then return GetRoshanLocation() end
+      return nil
+    end)
+    if okR and rloc ~= nil then return rloc end
     if bot ~= nil then
       local team = 2
       local ok, tm = pcall(function() return bot:GetTeam() end)

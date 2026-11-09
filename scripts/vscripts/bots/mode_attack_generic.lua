@@ -38,6 +38,9 @@ function M.Think(bot, snap, bb)
   local focus = Team.GetFocusTarget(snap)
   local target = focus or snap.nearestEnemy
   if target ~= nil then pcall(function() bot:Action_AttackUnit(target, false) end) return end
+  -- 没有目标: 去等兵落点, 不要原地干站 (旧版此时不下任何指令)。
+  local Utility = require(GetScriptDirectory() .. "/engine/utility")
+  pcall(function() bot:Action_MoveToLocation(Utility.GetLaneWaitPoint(bot, snap)) end)
 end
 
 function M.OnStart(bot)

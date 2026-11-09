@@ -54,7 +54,8 @@ INVOKER_SKILL_BUILD = [1, 4, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 
 
 
 def skill_build(priority, n_abilities):
-    """生成 1-25 级加点表: 6/11/16 点大招, 其余按优先级点满 (每技能最多 4 级)。
+    """生成 1-25 级加点表: 6/12/18 点大招 (7.00 起大招等级要求为 6/12/18,
+    旧版 6/11/16 是 7.00 前规则), 其余按优先级点满 (每技能最多 4 级)。
     Invoker(6 个技能位)用显式表。全部技能满级后的等级填 0 (天赋级)。"""
     if n_abilities > 4:
         return list(INVOKER_SKILL_BUILD)
@@ -62,7 +63,7 @@ def skill_build(priority, n_abilities):
     build = []
     pi = 0
     for lvl in range(1, 26):
-        if lvl in (6, 11, 16):
+        if lvl in (6, 12, 18):
             pick = 4
         else:
             pick = None
@@ -291,6 +292,7 @@ def main():
             "    if ok2 and cast then return end\n"
             "  end\n"
             "  Micro.TryCastByType(bot, snap, Heroes[HERO_KEY])\n"
+            "  Micro.TryUseItems(bot, snap)\n"
             "end\n\n"
             "function AbilityLevelUpThink()\n"
             "  local bot = GetBot()\n"
@@ -298,9 +300,28 @@ def main():
             "  local okPts, pts = pcall(function() return bot:GetAbilityPoints() end)\n"
             "  if not okPts or pts == nil or pts <= 0 then return end\n"
             "  local okLvl, lvl = pcall(function() return bot:GetLevel() end)\n"
-            "  if not okLvl or lvl == nil or lvl < 1 or lvl > #SKILL_BUILD then return end\n"
-            "  if SKILL_BUILD[lvl] == 0 then return end  -- 天赋级,显式跳过,禁止查询 -1 槽位。\n"
-            "  local slot = SKILL_BUILD[lvl] - 1\n"
+            "  if not okLvl or lvl == nil or lvl < 1 then return end\n"
+            "  -- 下一个要点的 build 位置由 (等级 - 剩余点数) 推出, 不存文件级状态:\n"
+            "  -- 正常每次升级只攒 1 点时 idx == lvl, 与旧行为一致; 一次攒多点时从最早\n"
+            "  -- 没点的 build 位置开始依次点, 不会把所有攒的点都砸进 build[lvl] 同一技能。\n"
+            "  -- (模拟实测: Lion 一次升 13 级, 旧版 20 次调用只点了 voodoo 到 4 级, Q/E/R 全 0。)\n"
+            "  local idx = lvl - pts + 1\n"
+            "  if idx < 1 then idx = 1 end\n"
+            "  -- 跳过已满级后无技能可点的空位 (17/18/19/21-24, build==0 且不是天赋级);\n"
+            "  -- 天赋级 (10/15/20/25) 的 build==0 要留住, 下面走点天赋分支。\n"
+            "  while idx <= #SKILL_BUILD and SKILL_BUILD[idx] == 0\n"
+            "      and idx ~= 10 and idx ~= 15 and idx ~= 20 and idx ~= 25 do\n"
+            "    idx = idx + 1\n"
+            "  end\n"
+            "  if idx > #SKILL_BUILD then return end\n"
+            "  if idx == 10 or idx == 15 or idx == 20 or idx == 25 then  -- 天赋级\n"
+            "    local okM, mod = pcall(require, GetScriptDirectory() .. \"/BotLib/hero_\" .. HERO_KEY)\n"
+            "    if okM and mod ~= nil and mod.TALENTS ~= nil then\n"
+            "      Skill.LevelTalent(bot, mod.TALENTS, idx)\n"
+            "    end\n"
+            "    return\n"
+            "  end\n"
+            "  local slot = SKILL_BUILD[idx] - 1\n"
             "  local ability = Micro.GetAbility(bot, slot)\n"
             "  if ability == nil then return end\n"
             "  local okName, name = pcall(function() return ability:GetAbilityName() end)\n"

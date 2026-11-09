@@ -26,7 +26,29 @@ function M.Think(bot, snap, bb)
   if target ~= nil then pcall(function() bot:Action_AttackUnit(target, false) end) return end
   if snap.deniable ~= nil and #snap.deniable > 0 then pcall(function() bot:Action_AttackUnit(snap.deniable[1], false) end) return end
   if snap.nearbyEnemyCreeps ~= nil and #snap.nearbyEnemyCreeps > 0 then pcall(function() bot:Action_AttackUnit(snap.nearbyEnemyCreeps[1], false) end) return end
-  if snap.nearbyAllyCreeps ~= nil and #snap.nearbyAllyCreeps > 0 then pcall(function() bot:Action_MoveToUnit(snap.nearbyAllyCreeps[1]) end) return end
+  if snap.nearbyAllyCreeps ~= nil and #snap.nearbyAllyCreeps > 0 then
+    -- 跟随的小兵如果已经在身边 (召唤物原地待命 / 攻塔的小兵不再前进),
+    -- 再跟下去就是站桩: 改去等兵落点 (棘轮式推进, 见 Utility.GetLaneWaitPoint)。
+    -- (模拟实测 Enigma 跟 eidolon 卡住。)
+    local c = snap.nearbyAllyCreeps[1]
+    local cd = nil
+    if snap.location ~= nil then
+      local ok, loc = pcall(function() return c:GetLocation() end)
+      if ok and loc ~= nil then
+        local dx = loc.x - snap.location.x
+        local dy = loc.y - snap.location.y
+        cd = math.sqrt(dx * dx + dy * dy)
+      end
+    end
+    if cd ~= nil and cd <= 150 then
+      pcall(function() bot:Action_MoveToLocation(Utility.GetLaneWaitPoint(bot, snap)) end)
+      return
+    end
+    pcall(function() bot:Action_MoveToUnit(c) end) return
+  end
+  -- 附近没有兵: 去等兵落点 (棘轮式推进), 不要在固定交汇点原地等下一波。
+  -- 旧版此时不下任何指令, 泉水边无兵时会卡住不动 (模拟实测)。
+  pcall(function() bot:Action_MoveToLocation(Utility.GetLaneWaitPoint(bot, snap)) end)
 end
 
 function M.OnStart(bot)

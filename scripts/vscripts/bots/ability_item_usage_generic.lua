@@ -50,16 +50,29 @@ function AbilityLevelUpThink()
   if not okLvl or lvl == nil or lvl < 1 or lvl > 25 then return end
   local key = heroKey(bot)
   local mod = loadHeroModule(key)
-  -- 天赋级 (10/15/20/25): 按天赋表点天赋, 不查技能槽。
-  if lvl == 10 or lvl == 15 or lvl == 20 or lvl == 25 then
-    if mod ~= nil and mod.TALENTS ~= nil then
-      if Skill.LevelTalent(bot, mod.TALENTS, lvl) then return end
-    end
-  end
   if mod == nil or mod.SKILL_BUILD == nil then return end
   local build = mod.SKILL_BUILD
-  if lvl > #build then return end
-  local slotIdx = build[lvl]
+  -- 下一个要点的 build 位置由 (等级 - 剩余点数) 推出, 不存模块级状态:
+  -- 正常每次升级只攒 1 点时 idx == lvl, 与旧行为一致; 一次攒多点时从最早
+  -- 没点的 build 位置开始依次点, 不会把所有攒的点都砸进 build[lvl] 同一技能。
+  -- (模拟实测: Lion 一次升 13 级, 旧版 20 次调用只点了 voodoo 到 4 级, Q/E/R 全 0。)
+  local idx = lvl - pts + 1
+  if idx < 1 then idx = 1 end
+  -- 跳过已满级后无技能可点的空位 (17/18/19/21-24, build==0 且不是天赋级);
+  -- 天赋级 (10/15/20/25) 的 build==0 要留住, 下面走点天赋分支。
+  while idx <= #build and build[idx] == 0
+      and idx ~= 10 and idx ~= 15 and idx ~= 20 and idx ~= 25 do
+    idx = idx + 1
+  end
+  if idx > #build then return end
+  -- 天赋级 (10/15/20/25): 按天赋表点天赋, 不查技能槽。
+  if idx == 10 or idx == 15 or idx == 20 or idx == 25 then
+    if mod.TALENTS ~= nil then
+      if Skill.LevelTalent(bot, mod.TALENTS, idx) then return end
+    end
+    return
+  end
+  local slotIdx = build[idx]
   if slotIdx == nil or slotIdx == 0 then return end
   local names = Skill.GetAbilityList(bot)
   local name = names[slotIdx]

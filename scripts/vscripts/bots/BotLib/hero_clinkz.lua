@@ -12,7 +12,7 @@ local Heroes = require(GetScriptDirectory() .. "/data/heroes")
 local X = {}
 X.KEY = "clinkz"
 X.TALENTS = { [10] = 0, [15] = 1, [20] = 0, [25] = 0 }
-X.SKILL_BUILD = {2, 1, 3, 2, 1, 4, 3, 2, 1, 3, 4, 2, 1, 3, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+X.SKILL_BUILD = {2, 1, 3, 2, 1, 4, 3, 2, 1, 3, 2, 4, 1, 3, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0}
 X.sBuyList = {}
 X.sBuyList["pos_1"] = {"item_tango", "item_flask", "item_quelling_blade", "item_wraith_band", "item_power_treads", "item_desolator", "item_black_king_bar", "item_daedalus", "item_butterfly", "item_satanic", "item_monkey_king_bar", "item_abyssal_blade", "item_aghanims_scepter", "item_travel_boots"}
 X.sBuyList["pos_2"] = {"item_tango", "item_flask", "item_bottle", "item_wraith_band", "item_power_treads", "item_desolator", "item_orchid", "item_black_king_bar", "item_bloodthorn", "item_daedalus", "item_aghanims_scepter", "item_nullifier"}
