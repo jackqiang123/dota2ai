@@ -5,6 +5,7 @@
 -- 按 sSellList 卖掉旧件。组件拆分靠 Valve 的 GetItemComponents() (如可用)。
 local Micro = require(GetScriptDirectory() .. "/engine/micro")
 local Heroes = require(GetScriptDirectory() .. "/data/heroes")
+local HeroKey = require(GetScriptDirectory() .. "/engine/hero_key")
 
 local SECRET_SHOP_ITEMS = {
   item_ultimate_scepter = true, item_aghanims_scepter = true,
@@ -15,7 +16,7 @@ local SECRET_SHOP_ITEMS = {
 local function heroKey(bot)
   local ok, name = pcall(function() return bot:GetUnitName() end)
   if not ok or name == nil then return nil end
-  return string.gsub(name, "^npc_dota_hero_", "")
+  return HeroKey.FromUnitName(name)
 end
 
 local function heroPosition(bot, heroData)

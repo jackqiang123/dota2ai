@@ -2,6 +2,7 @@
 -- 效用决策层:对每个候选行为算 Desire(0~1),选最高分执行。
 -- 权重全部放在 Difficulty / heroData 里,可离线调参后导出,不写死在 if-else 里。
 local Team = require(GetScriptDirectory() .. "/engine/team")
+local HeroKey = require(GetScriptDirectory() .. "/engine/hero_key")
 
 local Utility = {}
 
@@ -22,7 +23,26 @@ Utility.DIFFICULTY = {
   [4] = { name = "unfair",  thinkDelay = 0.10, lasthitMargin = 0,  retreatHp = 0.25, aggression = 0.95 },
 }
 
-function Utility.GetDifficulty()
+function Utility.GetDifficulty(bot)
+  -- 优先读真机房间难度 bot:GetDifficulty() (ModDota CDOTA_Bot_Script)。
+  -- 返回值映射待真机确认: VDC 控制台命令表说 dota_bot_set_difficulty 是
+  -- 0=easy/1=medium/2=hard/3=unfair; 另有实测说 dota_bot_practice_difficulty
+  -- 是 1=easy/2=medium/3=hard/4=unfair。两种口径下 4/5 都按 unfair 处理,
+  -- 且首次真机运行会把原始值 print 到控制台 (checklist 里让测试者抄下来),
+  -- 回来再把映射钉死。旧版完全不读它, 房间难度选什么都按内部默认 3 打。
+  -- 模拟的 mock bot 没有 GetDifficulty, pcall 失败后走 _G 兜底, 模拟行为不变。
+  if bot ~= nil then
+    local ok, raw = pcall(function() return bot:GetDifficulty() end)
+    if ok and type(raw) == "number" then
+      if _G.DOTA_AI_DIFFICULTY_RAW == nil then
+        _G.DOTA_AI_DIFFICULTY_RAW = raw
+        print("[dota2ai] lobby difficulty raw GetDifficulty()=" .. tostring(raw))
+      end
+      local map = { [0] = 1, [1] = 2, [2] = 3, [3] = 4, [4] = 4, [5] = 4 }
+      local d = map[raw]
+      if d ~= nil then return Utility.DIFFICULTY[d], d end
+    end
+  end
   local d = 3
   if _G.DOTA_AI_DIFFICULTY ~= nil then d = _G.DOTA_AI_DIFFICULTY end
   if d < 1 then d = 1 end
@@ -119,8 +139,9 @@ function Utility.GetHeroLane(bot, snap)
   local ok, uname = pcall(function() return bot:GetUnitName() end)
   if ok and uname ~= nil then
     local Heroes = require(GetScriptDirectory() .. "/data/heroes")
-    local key = string.gsub(uname, "^npc_dota_hero_", "")
-    local hd = Heroes[key]
+    local key = HeroKey.FromUnitName(uname)
+    local hd = nil
+    if key ~= nil then hd = Heroes[key] end
     if hd ~= nil and hd.lane ~= nil then
       local team = 2
       if snap ~= nil and snap.team ~= nil then team = snap.team end
@@ -146,7 +167,7 @@ end
 -- snap: perception.Snapshot(bot) 的结果; heroData: data/heroes.lua 的条目。
 -- 返回 scores 表 + 最优行为名。所有分数都可解释、可调参。
 function Utility.Score(bot, snap, heroData, gameTime)
-  local diff = Utility.GetDifficulty()
+  local diff = Utility.GetDifficulty(bot)
   local scores = {}
   local t = gameTime or 0
   if snap == nil then

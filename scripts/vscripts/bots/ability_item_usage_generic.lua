@@ -7,11 +7,12 @@ local Perception = require(GetScriptDirectory() .. "/engine/perception")
 local Micro = require(GetScriptDirectory() .. "/engine/micro")
 local Heroes = require(GetScriptDirectory() .. "/data/heroes")
 local Skill = require(GetScriptDirectory() .. "/engine/skill")
+local HeroKey = require(GetScriptDirectory() .. "/engine/hero_key")
 
 local function heroKey(bot)
   local ok, name = pcall(function() return bot:GetUnitName() end)
   if not ok or name == nil then return nil end
-  return string.gsub(name, "^npc_dota_hero_", "")
+  return HeroKey.FromUnitName(name)
 end
 
 local function loadHeroModule(key)

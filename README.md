@@ -2,7 +2,9 @@
 
 一整套、可安装、可跑的 Dota 2 Workshop Bot AI。**不是 124 份手写脚本**，而是 Valve 原生 Team / Mode / Action 三层结构 + 一张英雄数据表 + 生成器。
 
-> 版本：**v3.2.0**（2026-11-09）| 版本基准：**7.41f，127 名英雄**。
+> 版本：**v3.3.0**（2026-11-09）| 版本基准：**7.41f，127 名英雄**。
+>
+> **v3.3.0 更新日志：**真机本地 lobby 测试包 + 三个真机加载 blocker 修复（详见 `tools/real-game/`）。审计发现并修掉：(1) **19 个英雄内部名错**——`data/heroes.lua` 的 `npc_name` 以前一律写成 `npc_dota_hero_<key>`，但 Valve 真内部名对 19 个老英雄不同（Zeus=zuus、Wraith King=skeleton_king、Io=wisp、Magnus=magnataur 等，两处独立来源核对一致：Liquipedia Cheats + skadi npc_heroes.txt），真机里这 19 个英雄的 `bot_<内部名>.lua` / `ability_item_usage_<内部名>.lua` 永远加载不到，且所有按 `GetUnitName()` 查表的地方全部 miss——不会放技能、不会买装、不会点技能、默认挤中路。现 `npc_name` 已按真内部名生成（`tools/generate.py` 的 `INTERNAL_NAME` 表），并新增 `engine/hero_key.lua` 做内部名↔key 换算，四处查表点全部改走它，`tools/verify_hero_key.lua` 64 项全过；(2) **难度没接线**——旧版 `Utility.GetDifficulty()` 只读 `_G.DOTA_AI_DIFFICULTY`（默认 3），房间选什么难度都按 3 打；现改为优先读 `bot:GetDifficulty()`（房间难度），原始值首次运行 print 到控制台供核对映射（两套口径冲突，见 `tools/real-game/known-questions.md`），读不到时回退 `_G`；(3) **选人没实装**——旧版 `hero_selection.lua` 的 `Think()` 只算出一个 pick 存在 `_G` 里、从不调用 `SelectHero`，真机里选人协同等于不存在；现 `Think()` 真的调全局 `SelectHero(nPlayerID, npc_name)` 给己方未选英雄的 Bot 选人（AP 式，CM 未实现），全部 API 调用包 pcall，API 不可用时游戏会按时间到随机选人、不会卡死。另外纠正 `team_think.lua` 注释：Valve 原生 Team 层钩子文件是 `team_desires.lua`，不是 `team_think.lua`（本文件真机里无加载方，只供模拟器用；Team 逻辑真机里经 dispatcher 直接调 `Team.TeamThink()` 跑）。`validate.py` 新增检查 22（内部名 19 个 + 四处换算点 + 难度接线 + 选人实装 + 注释纠正）。**至今仍未跑过真机**：以上修复只在 luac + 单元 mock + 模拟器里验证过，第一局真机结果见 `tools/real-game/checklist.md` 回来再填。v3.2.0 的全部内容保留，见下文。
 >
 > **v3.2.0 更新日志：**新增 `tools/integration/hero_tests.lua`：per-hero integration test——127 个英雄逐个进模拟器各打一局 10 分钟短对局（1 秒 tick，种子 42 + 英雄序号，可复现；被测英雄 Radiant 按主位置/分路 + 4 个固定队友，对固定敌方 Sven/Dazzle/Enigma/Void/Lina），逐项门控判定（0 Lua 错误、移动/攻击/买装/升 ≥2 级、放过 ≥1 次技能、无 60 秒卡住、无 120 秒泉水挂机、补刀或击杀/助攻、金钱经验增长），报告 `tools/integration/hero_tests_report.md`：**126/127 通过，1 个已知限制（Timbersaw：2v3 劣势路 10 分钟 0 补刀，见下文），0 失败，全程 wall time 约 3.8 分钟**。跑的过程中修掉 16 个模拟发现的 Bot bug（详见 `tools/integration/README.md` “v3.2.0”一节），最关键的四个：(1) `GetScriptDirectory` 在 `valve_api.lua` 里定义在 BotLib require 之后，导致 127 个英雄文件加载全部静默失败、所有 Consider 从没跑过（此前“通过”的施放全是通用 fallback）；(2) 7 个 roam 英雄（ES 等）的 data lane 是 `"roam"`，`GetHeroLane` 没处理、掉到默认中路，开局全挤去中路；(3) 固定敌方阵容用 Huskar 当中单，但 Huskar 的 data lane 是 safelane，Dire 中路全程空无一人，6 个中单英雄 10 分钟见不到敌方英雄——敌方中单改成真中单 Lina（中单重名时替补 Zeus）；(4) `team_roam` / `roam` 见到敌人就 `MoveToUnit` 跟随，敌人在 0 距离也跟、四人互相跟随原地站桩 3 分钟（主对局 seed 42 因此打盾门控 0 tick），改成在攻击射程内直接攻击。v3.1.0 的全部内容保留，见下文。
 >
@@ -94,11 +96,15 @@ tools/
 
 ## 安装
 
-### 方法 A：Steam Workshop Tools（推荐，可订阅更新）
+### 方法 A：Steam Workshop（订阅更新）
 
-1. Steam 库 → Dota 2 → 属性 → DLC → 安装 **Dota 2 Workshop Tools**。
-2. 把本仓库内容作为一个 Workshop Addon 导入（`addoninfo.txt` 已写好标题与描述），在 Workshop Tools 里 Build 并上传。
-3. 游戏内建房间 → 选择该 Addon → 填满 Bot → 开始。
+Bot 脚本不走“自定义游戏 Addon”那套：游戏加载 Bot 脚本的位置是
+`game/dota/scripts/vscripts/bots/`，Workshop 上传的也是这个目录的内容
+（Valve Developer Community, Dota Bot Scripting）。所以上传时只传
+`scripts/vscripts/bots/` 里的文件，不要把整个仓库当 Addon 导——
+`addoninfo.txt` 对 Bot 脚本加载不起作用（它只是仓库里留档的 Addon 信息）。
+Workshop 上传界面的具体步骤尚未在真机上走通，见
+`tools/real-game/known-questions.md` 第 10 条；第一次真机建议先用方法 B。
 
 ### 方法 B：手动复制（最快，不用等 Workshop 审核）
 
@@ -110,7 +116,14 @@ tools/
 
 ## 难度（4 档，公开调参，不藏作弊）
 
-在 `bot_generic.lua` 里 `_G.DOTA_AI_DIFFICULTY` 默认为 3；房间脚本可改。参数在 `engine/utility.lua` 的 `DIFFICULTY` 表里：
+在 `bot_generic.lua` 里 `_G.DOTA_AI_DIFFICULTY` 默认为 3；v3.3.0 起房间难度
+会传进来：`Utility.GetDifficulty(bot)` 优先读 `bot:GetDifficulty()`（房间
+选的难度），读不到时回退 `_G.DOTA_AI_DIFFICULTY`。注意：`GetDifficulty()`
+返回值的映射尚未在真机上确认（两套口径冲突：VDC 控制台命令表说
+`dota_bot_set_difficulty` 是 0=简单/1=中等/2=困难/3=疯狂，另有实测说
+`dota_bot_practice_difficulty` 是 1=简单/2=中等/3=困难/4=疯狂），代码里
+按前一套映射且 4/5 一律按疯狂处理，首次真机运行会把原始值 print 到控制台，
+回来按实测值钉死映射（见 `tools/real-game/known-questions.md` 第 1 条）。
 
 | 档 | 名称 | 反应延迟（thinkDelay，Core 真正节流） | 补刀容错 | 撤退血量阈值 | 激进程度 |
 |---|---|---|---|---|---|
@@ -121,17 +134,19 @@ tools/
 
 没有任何一档有金钱/经验加成：Lua Bot 脚本没有发金钱/经验的 API，v1.0 表里的金钱经验系数是纸面数字，v1.1.0 已删除。难度只靠反应延迟、补刀容错、撤退阈值、激进程度区分；想要引擎级数值加成的 Unfair，请用房间难度设置。
 
-## 校验结果（本机实测，2026-11-09，v3.1.0）
+## 校验结果（本机实测，2026-11-09，v3.3.0）
 
 ```bash
 python3 tools/generate.py   # heroes: 127 / per-hero files: 381 + BotLib 127 / deep heroes (real Consider): 127 / 127
-python3 tools/validate.py   # lua files: 539, validator: /usr/bin/luac, errors: 0, warnings: 0 -> VALIDATION PASSED
+python3 tools/validate.py   # lua files: 540, validator: ~/workspace/.lua/usr/bin/luac5.4, errors: 0, warnings: 0 -> VALIDATION PASSED
 lua5.4 tools/verify_v110.lua  # VERIFY_V110 PASSED: 40 checks (已适配 v2.0.0)
 lua5.4 tools/verify_v200.lua  # VERIFY_V200 PASSED: 71 checks
 lua5.4 tools/verify_v300.lua  # VERIFY_V300 PASSED: 147 checks
+lua5.4 tools/verify_hero_key.lua  # verify_hero_key: 64 checks PASSED (v3.3.0 新增：内部英雄名换算)
 python3 tools/generate.py && python3 tools/generate.py  # 两次重跑 diff 为 0
-find scripts -name "*.lua" -exec luac -p {} +  # 539 个文件 0 错误
-lua5.4 tools/integration/run.lua  # 40 分钟 5v5 模拟对局，9 个门控全 PASS（见下）
+find scripts tools -name "*.lua" -exec luac -p {} +  # 548 个文件 0 错误
+lua5.4 tools/integration/run.lua  # 40 分钟 5v5 模拟对局，INTEGRATION PASS（种子 42：Radiant 17:23 基地胜，见 last_run.md）
+lua5.4 tools/integration/hero_tests.lua  # 126/127 通过 + 1 已知限制（Timbersaw），0 失败，见 hero_tests_report.md
 ```
 
 `verify_v110.lua` 是 v1.1.0 新增的独立验证（不是原来那个返回 nil 技能的弱 smoke）：技能 mock 带 `IsNull()=false` 等真实方法，覆盖 channel 单体/范围、summon、aura/passive 跳过、escape、thinkDelay 节流（简单 0.5s / 困难 0.15s）、打盾分、插眼、15 级不查 -1 槽位、Invoker 上限、主属性计数、朗戈定位、连招窗口、集火、救人、选人协同、防重叠、信使。
@@ -201,6 +216,23 @@ tick/局长也没有缩水。模拟里修掉的 bug 见 `tools/integration/READM
 > 一个黑板、肉山坑边自动攻击规则、模拟扩展 `GetRoshanLocation()` 等）
 > 见 `tools/integration/README.md`，模拟里修掉的 Bot bug（v3.1.0 13 个 +
 > v3.2.0 16 个）也在那里逐条列出。
+
+## 真机测试：本地 lobby 跑一局（v3.3.0 新增）
+
+模拟器验不了真机加载（内部英雄名、房间难度、选人 API、控制台日志都
+只在真客户端里存在），所以第一局必须在 Dota 2 里建本地房间跑。
+`tools/real-game/` 是测试包：`LOBBY_TEST.md`（完整步骤，每步有预期
+现象和“如果不是怎么办”）、`install.ps1`（Windows 拷贝脚本，把
+`scripts/vscripts/bots/` 的内容拷进
+`game/dota/scripts/vscripts/bots/`，先备份原文件夹）、
+`console-commands.txt`（开局要敲的命令，每条都写明一手来源）、
+`checklist.md`（打完一局直接填的观测记录表）、`known-questions.md`
+（第一局之前回答不了的问题清单，跑完逐项划掉）。
+
+> **重要：** v3.3.0 审计修掉的三个真机加载 blocker（19 个英雄内部名、
+> 难度接线、选人实装）只在 luac + mock + 模拟器里验证过，**至今仍未
+> 跑过真机**。第一局的任务首先是确认它们在真客户端里成立，其次才是
+> 看打得怎么样。
 
 ## 英雄覆盖表（127 名，全部）
 

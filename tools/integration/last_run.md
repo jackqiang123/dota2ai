@@ -5,7 +5,7 @@
 - duration: 40 min, tick: 1.0s, seed: 42, difficulty: 3
 - radiant: axe, zeus, lion, crystal_maiden, magnus
 - dire: sven, dazzle, enigma, faceless_void, huskar
-- wall time: 3.4s, ticks run: 1043
+- wall time: 3.5s, ticks run: 1043
 - result: Radiant wins (ancient, game time 17:23)
 - aborted: no
 

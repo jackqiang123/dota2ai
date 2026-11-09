@@ -8,6 +8,7 @@ local ModeDispatcher = {}
 local Perception = require(GetScriptDirectory() .. "/engine/perception")
 local Utility = require(GetScriptDirectory() .. "/engine/utility")
 local Team = require(GetScriptDirectory() .. "/engine/team")
+local HeroKey = require(GetScriptDirectory() .. "/engine/hero_key")
 
 ModeDispatcher.MODE_FILES = {
   "laning", "farm", "push", "push_tower_mid", "push_tower_bot", "push_tower_top",
@@ -116,13 +117,13 @@ function ModeDispatcher.Think(bot)
     local Heroes = require(GetScriptDirectory() .. "/data/heroes")
     local okName, name = pcall(function() return bot:GetUnitName() end)
     if okName and name ~= nil then
-      local hkey = string.gsub(name, "^npc_dota_hero_", "")
-      Micro.TryBuyNextItem(bot, Heroes[hkey])
+      local hkey = HeroKey.FromUnitName(name)
+      if hkey ~= nil then Micro.TryBuyNextItem(bot, Heroes[hkey]) end
       Micro.TryDeliverCourier(bot)
     end
   end
   local t = gameTime()
-  local diff = Utility.GetDifficulty()
+  local diff = Utility.GetDifficulty(bot)
   if t > 0 then
     local last = _lastThink[key]
     if last ~= nil and (t - last) < (diff.thinkDelay or 0) then return _currentMode[key] end

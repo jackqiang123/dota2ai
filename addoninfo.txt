@@ -1,8 +1,8 @@
 "Dota 2 AI"
 {
-	"addonversion"		"3.2.0"
+	"addonversion"		"3.3.0"
 	"addontitle"		"Dota 2 AI - Valve Mode System + Data-Driven Bots"
-	"addon_description"	"Full 127-hero Dota 2 bot AI v3.2.0 (patch 7.41f). Valve native Team/Mode/Action architecture (method inspired by Valve Bot API docs and Open Hyper AI ARCHITECTURE.md; all code original): 15 mode files, TeamThink, BotLib per-hero logic with real Consider logic for all 127 heroes (fallback only as last resort, target trigger rate 0), per-position item builds, per-hero talents, data-driven generation. Hero interactions: combo windows, focus fire, rescue priority, draft synergy. Difficulty 1-4 by reaction time and decision thresholds only; Lua bot scripts cannot grant gold/XP, see README. v3.2.0 adds tools/integration/hero_tests.lua: per-hero integration tests, each of the 127 heroes plays one 10-minute simulated game (seed 42 + hero index), 126/127 PASS + 1 known limitation (Timbersaw economy in a 2v3 offlane) in ~4 min wall time; fixed 16 sim-found bugs in the process (see tools/integration/README.md).
+	"addon_description"	"Full 127-hero Dota 2 bot AI v3.3.0 (patch 7.41f). Valve native Team/Mode/Action architecture (method inspired by Valve Bot API docs and Open Hyper AI ARCHITECTURE.md; all code original): 15 mode files, TeamThink, BotLib per-hero logic with real Consider logic for all 127 heroes (fallback only as last resort, target trigger rate 0), per-position item builds, per-hero talents, data-driven generation. Hero interactions: combo windows, focus fire, rescue priority, draft synergy. Difficulty 1-4 by reaction time and decision thresholds only; Lua bot scripts cannot grant gold/XP, see README. v3.3.0 fixes three real-client load blockers found by audit (19 heroes' Valve internal names, lobby difficulty now read via bot:GetDifficulty(), hero_selection actually picks via SelectHero) and adds tools/real-game/ local-lobby test pack (install script + console commands + checklist). No real Dota 2 client test has been run yet; see tools/real-game/known-questions.md.
 	"addon_url"		"https://github.com/jackqiang123/dota2ai"
 	"addon_author"		"jackqiang123"
 }

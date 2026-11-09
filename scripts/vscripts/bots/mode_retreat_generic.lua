@@ -28,7 +28,7 @@ end
 function M.GetDesire(bot, snap, bb)
   if bot == nil or snap == nil then return 0 end
   local Utility = require(GetScriptDirectory() .. "/engine/utility")
-  local diff = Utility.GetDifficulty()
+  local diff = Utility.GetDifficulty(bot)
   local hp = snap.healthPct or 1
   if hp < diff.retreatHp then
     local d = (diff.retreatHp - hp) / diff.retreatHp + 0.3
@@ -42,7 +42,7 @@ end
 
 function M.Think(bot, snap, bb)
   local Utility = require(GetScriptDirectory() .. "/engine/utility")
-  local diff = Utility.GetDifficulty()
+  local diff = Utility.GetDifficulty(bot)
   local hp = snap.healthPct or 1
   local key = botKey(bot)
   local fountain = { x = -7000, y = -7000, z = 0 }

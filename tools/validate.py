@@ -280,7 +280,7 @@ def main():
     # 20. v3.1.0: integration 环境齐全 —— sim / valve_api / run / README 存在;
     # luac 过 integration 文件 (注意: 检查 1 的 luac 只扫 bots 目录, 这里单独扫);
     # 不得有 /home/hatch 硬编码 (run.lua 用 arg[0] 推导仓库根目录);
-    # 版本号 3.2.0 (addoninfo.txt + 主 README 含 integration 一节)。
+    # 版本号 3.3.0 (addoninfo.txt + 主 README 含 integration 一节)。
     # 注意: validate.py 里不跑完整对局 (那是 run.lua 的事, 40 分钟太长),
     # 只做存在性 / 语法 / 路径 / 版本检查。
     integ = root / "tools" / "integration"
@@ -301,11 +301,11 @@ def main():
             if "/home/hatch" in txt or "/home/" in txt:
                 errors.append("tools/integration/%s contains hardcoded /home/ path" % name)
     addoninfo = (root / "addoninfo.txt").read_text(encoding="utf-8", errors="replace")
-    if '"3.2.0"' not in addoninfo:
-        errors.append("addoninfo.txt is not 3.2.0")
+    if '"3.3.0"' not in addoninfo:
+        errors.append("addoninfo.txt is not 3.3.0")
     main_readme = (root / "README.md").read_text(encoding="utf-8", errors="replace")
-    if "v3.2.0" not in main_readme or "tools/integration" not in main_readme:
-        errors.append("main README missing v3.2.0 / integration section")
+    if "v3.3.0" not in main_readme or "tools/integration" not in main_readme:
+        errors.append("main README missing v3.3.0 / integration section")
     run_txt = ""
     if (integ / "run.lua").exists():
         run_txt = (integ / "run.lua").read_text(encoding="utf-8", errors="replace")
@@ -331,6 +331,83 @@ def main():
             if n_total != 127 or n_pass + n_known != 127 or n_fail != 0:
                 errors.append("hero_tests_report.md: pass %d + known %d != 127 or fail %d != 0"
                               % (n_pass, n_known, n_fail))
+
+    # 22. v3.3.0: 真机加载三 blocker 已修 —— 内部英雄名 / 难度接线 / 选人实装。
+    # (a) generate.py 的 INTERNAL_NAME 表必须恰好是那 19 个 (来源:
+    # Liquipedia Cheats + skadi npc_heroes.txt, 两处独立核对一致); heroes.lua
+    # 里这 19 个的 npc_name 必须是 npc_dota_hero_<内部名>, 其余 108 个
+    # npc_name == npc_dota_hero_<key>。
+    from generate import INTERNAL_NAME
+    EXPECTED_INTERNAL = {
+        "anti_mage": "antimage", "centaur_warrunner": "centaur",
+        "clockwerk": "rattletrap", "doom": "doom_bringer", "io": "wisp",
+        "lifestealer": "life_stealer", "magnus": "magnataur",
+        "natures_prophet": "furion", "necrophos": "necrolyte",
+        "outworld_destroyer": "obsidian_destroyer", "queen_of_pain": "queenofpain",
+        "shadow_fiend": "nevermore", "timbersaw": "shredder",
+        "treant_protector": "treant", "underlord": "abyssal_underlord",
+        "vengeful_spirit": "vengefulspirit", "windranger": "windrunner",
+        "wraith_king": "skeleton_king", "zeus": "zuus",
+    }
+    if INTERNAL_NAME != EXPECTED_INTERNAL:
+        errors.append("tools/generate.py INTERNAL_NAME mismatch: %s"
+                      % (set(INTERNAL_NAME.items()) ^ set(EXPECTED_INTERNAL.items())))
+    npc_map = {}
+    for m in re.finditer(r"^\s{2}(\w+) = \{ key = \"\w+\", name_en = .*?npc_name = \"(npc_dota_hero_\w+)\"",
+                         heroes_lua, re.M):
+        npc_map[m.group(1)] = m.group(2)
+    if len(npc_map) != 127:
+        errors.append("heroes.lua npc_name entries != 127: %d" % len(npc_map))
+    for key in {h[0] for h in HEROES}:
+        want = "npc_dota_hero_" + EXPECTED_INTERNAL.get(key, key)
+        if npc_map.get(key) != want:
+            errors.append("heroes.lua npc_name wrong for %s: %s != %s"
+                          % (key, npc_map.get(key), want))
+    # (b) engine/hero_key.lua 存在且暴露 FromUnitName/NpcName; 四处按单位名查表的
+    # 地方必须走 HeroKey, 不得再有直接拿 gsub 结果当 key 的地方 (hero_key.lua
+    # 自身剥前缀除外, 它是唯一的剥前缀点)。
+    hk_path = bots / "engine" / "hero_key.lua"
+    if not hk_path.exists():
+        errors.append("missing engine/hero_key.lua")
+    else:
+        hk_txt = hk_path.read_text(encoding="utf-8")
+        for fn in ["function HeroKey.FromUnitName", "function HeroKey.NpcName"]:
+            if fn not in hk_txt:
+                errors.append("engine/hero_key.lua missing %s" % fn)
+    for rel in ["engine/utility.lua", "mode_dispatcher.lua",
+                "ability_item_usage_generic.lua", "item_purchase_generic.lua"]:
+        txt = (bots / rel).read_text(encoding="utf-8")
+        if "HeroKey.FromUnitName" not in txt:
+            errors.append("%s does not use HeroKey.FromUnitName" % rel)
+        if 'string.gsub(name, "^npc_dota_hero_", "")' in txt:
+            errors.append("%s still strips npc prefix directly (use HeroKey)" % rel)
+    # (c) 难度接线: Utility.GetDifficulty(bot) 必须读 bot:GetDifficulty(),
+    # 且全仓库不得再有无参调用 Utility.GetDifficulty() (定义本身除外)。
+    util_txt = (bots / "engine" / "utility.lua").read_text(encoding="utf-8")
+    if "function Utility.GetDifficulty(bot)" not in util_txt:
+        errors.append("Utility.GetDifficulty does not take a bot param")
+    if "bot:GetDifficulty()" not in util_txt:
+        errors.append("Utility.GetDifficulty never calls bot:GetDifficulty()")
+    for f in bots.rglob("*.lua"):
+        txt = f.read_text(encoding="utf-8", errors="replace")
+        if re.search(r"Utility\.GetDifficulty\(\)", txt):
+            errors.append("no-arg Utility.GetDifficulty() still in %s" % f.relative_to(root))
+    # (d) 选人实装: hero_selection.lua 的 Think() 必须真的调用全局 SelectHero
+    # (npc 名经 HeroKey.NpcName), 不得再是“只算不选”。且纯逻辑选人函数不得
+    # 是同名全局 (会覆盖 Valve 的 SelectHero API, 见 hero_selection.lua 注释)。
+    hs_txt = (bots / "hero_selection.lua").read_text(encoding="utf-8")
+    if "pcall(_G.SelectHero" not in hs_txt:
+        errors.append("hero_selection.lua Think() never calls the real SelectHero API")
+    if "HeroKey.NpcName" not in hs_txt:
+        errors.append("hero_selection.lua does not pass a real internal name to SelectHero")
+    if re.search(r"^function SelectHero\(", hs_txt, re.M):
+        errors.append("hero_selection.lua defines a global SelectHero (would overwrite Valve's API)")
+    # (e) team_think.lua 注释纠正: 不得再声称 Valve 按文件名调用本文件。
+    tt_txt = (bots / "team_think.lua").read_text(encoding="utf-8")
+    if "Valve 每帧先调一次 TeamThink" in tt_txt:
+        errors.append("team_think.lua still claims Valve calls it by filename")
+    if "team_desires.lua" not in tt_txt:
+        errors.append("team_think.lua does not explain the real native hook file")
 
     print("heroes: %d" % len(HEROES))
     print("per-hero files expected: %d" % (len(HEROES) * 3))

@@ -1,0 +1,58 @@
+# console-commands.txt -- 真机开局要敲的命令（v3.3.0）
+# 用法：游戏中按 \ 打开控制台，逐条敲“开局必敲”一节；聊天命令在聊天框里敲，
+# 不是控制台。来源写在每条后面——查不到一手来源的命令不进“必敲”，只进
+# “可选 / 未核实”一节。
+#
+# ============ 开局必敲（控制台） ============
+# sv_cheats 1 -- 开作弊开关，调试命令需要。
+#   来源：OHA Discussion #68；Nostrademous Dota2-FullOverwrite wiki
+#   "Workflow for Debugging Bots"（sv_cheats 1 for cheats）。
+sv_cheats 1
+# dota_bot_debug_team 2 -- 在屏幕上显示 Radiant（2 队）Bot 的调试信息：
+#   当前模式、目标、欲望值。看 Bot 在想什么的第一手工具。
+#   来源：Valve Developer Community, Dota Bot Scripting, Debugging 一节。
+dota_bot_debug_team 2
+# dota_bot_debug_team 3 -- 同上，Dire（3 队）。
+#   来源：同上。
+dota_bot_debug_team 3
+# dota_bot_debug_lanes -- 显示各 Bot 的分路分配。第一局重点看：19 个改名
+#   英雄有没有按 data 的 lane 去对的路（旧 bug 会让他们全挤中路）。
+#   来源：Valve Developer Community, Dota Bot Scripting, Debugging 一节。
+dota_bot_debug_lanes
+# dota_bot_select_debug -- 显示当前选中 Bot 的调试信息（模式/目标/状态）。
+#   来源：Valve Developer Community, Dota Bot Scripting, Debugging 一节。
+dota_bot_select_debug
+#
+# ============ 聊天命令（聊天框里敲，不是控制台） ============
+# -dumpbots -- 显示 AI 状态（每个 Bot 的当前行为/模式）。
+#   来源：Liquipedia Cheats（cheats enabled 时的聊天命令）。
+-dumpbots
+#
+# ============ 可选：想快速看高等级行为时再敲 ============
+# -levelbots 5 -- 所有 Bot 升 5 级。
+#   来源：Liquipedia Cheats。
+# -levelbots 5
+# -gold 1000 -- 给你自己的英雄 1000 金（只影响你，不影响 Bot）。
+#   来源：Liquipedia Cheats（-gold）。
+# -gold 1000
+#
+# ============ 可选 / 未核实（不要当成已确认的步骤） ============
+# dota_bot_set_difficulty -- 刻度有争议，不要在第一局当必敲步骤：
+#   VDC 控制台命令表说 0=简单/1=中等/2=困难/3=疯狂；
+#   另有实测说 dota_bot_practice_difficulty 是 1=简单/2=中等/3=困难/4=疯狂。
+#   第一局直接在房间 UI 里选 Hard（困难），不要敲这条命令。
+#   回来后按 console.log 里 [dota2ai] lobby difficulty raw GetDifficulty()=X
+#   的实测值再定映射。见 known-questions.md 第 1、7 条。
+# dota_bot_set_difficulty 2
+# script_reload -- ModDota 脚本入门说它重载 vscripts，但对 Bot 脚本是否
+#   适用未核实。第一局不要靠它热更新；改完脚本重新进房间最稳妥。
+#   见 known-questions.md 第 6 条。
+# script_reload
+#
+# ============ 明确不要用的命令 ============
+# dota_launch_custom_game <addon> <map> -- 这是自定义游戏 Addon 的启动命令，
+#   不是 Bot 脚本的（ModDota 脚本入门）。不要用。
+# script_reload_code bots/fretbots -- OHA 专属（FretBots），本仓库没有
+#   fretbots 文件，不要用。
+# dota_bot_practice_script <workshop-id> -- OHA 离线 cfg 的做法，需要
+#   Workshop 物品 ID，本仓库没有上 Workshop，不要用。

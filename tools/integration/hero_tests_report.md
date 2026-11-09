@@ -5,7 +5,7 @@
 - 每英雄一局: 10 分钟, tick 1.0s, 种子 42 + 英雄序号, 难度 3
 - 被测英雄在 Radiant, 按主位置/分路; 队友从固定池按位置补齐; 敌方固定 Sven/Dazzle/Enigma/Void/Lina (与被测英雄重名时替换: 中单 Lina 换 Zeus, 其他换 Tidehunter)
 - 解释器: ./../.lua/usr/bin/lua5.4 (Lua 不在系统 PATH 时用仓库外的用户空间副本, 见 tools/integration/README.md)
-- wall time: 226.0s, 平均每局 1.78s
+- wall time: 307.0s, 平均每局 2.42s
 - 通过率: 126/127 (99.2%), 已知限制 1, 失败 0
 
 ## 门控 (每英雄逐项判定)
@@ -155,4 +155,4 @@
 ## Notes
 
 - 这是模拟 (simulation) 结果, 不是真机 Dota 2 结果。胜负/补刀/施放次数只说明 Bot 脚本在模拟世界里能跑通、无卡住无报错, 不能说成真机强度结论。模拟的已知简化见 tools/integration/README.md。
-- 每局的 run.lua 完整报告 + stats 留在 /tmp/dota2ai-hero-tests/<hero>.md|.lua, 失败英雄可凭种子复现: 种子 = 42 + 英雄在字母序中的序号。
+- 每局的 run.lua 完整报告 + stats 留在 /tmp/dota2ai-hero-tests-v330/<hero>.md|.lua, 失败英雄可凭种子复现: 种子 = 42 + 英雄在字母序中的序号。

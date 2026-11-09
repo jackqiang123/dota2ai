@@ -40,6 +40,37 @@ SELL_LISTS = {
     5: ["item_tango", "item_flask", "item_clarity", "item_ward_observer", "item_magic_wand"],
 }
 
+# v3.3.0: Valve 内部英雄名 (npc_dota_hero_<internal>) 与本项目 key 不同的 19 个英雄。
+# 其余 108 个内部名 == key。事实来源 (两处独立核对一致):
+#  - Liquipedia Cheats 页的 Hero Code Name 列表 (https://liquipedia.net/dota2/Cheats)
+#  - skadistats/skadi wiki 的 npc_heroes.txt / WebAPI 清单 (Hero Names and IDs)
+# 旧版 npc_name 一律写成 npc_dota_hero_<key>, 导致真机里这 19 个英雄的
+# bot_<internal>.lua / ability_item_usage_<internal>.lua 永远加载不到,
+# 且所有按 GetUnitName() 查表的地方 (出装/技能/加点/分路) 全部 miss,
+# 英雄在真机里不会放技能、不会买装、不会点技能、默认挤中路。
+# npc_name 是唯一事实来源, engine/hero_key.lua 只做反查, 不另存一份表。
+INTERNAL_NAME = {
+    "anti_mage": "antimage",
+    "centaur_warrunner": "centaur",
+    "clockwerk": "rattletrap",
+    "doom": "doom_bringer",
+    "io": "wisp",
+    "lifestealer": "life_stealer",
+    "magnus": "magnataur",
+    "natures_prophet": "furion",
+    "necrophos": "necrolyte",
+    "outworld_destroyer": "obsidian_destroyer",
+    "queen_of_pain": "queenofpain",
+    "shadow_fiend": "nevermore",
+    "timbersaw": "shredder",
+    "treant_protector": "treant",
+    "underlord": "abyssal_underlord",
+    "vengeful_spirit": "vengefulspirit",
+    "windranger": "windrunner",
+    "wraith_king": "skeleton_king",
+    "zeus": "zuus",
+}
+
 
 def dedup(seq):
     seen, out = set(), []
@@ -230,7 +261,7 @@ def main():
         ab_lua = ", ".join('{ type = "%s" }' % t for t in ab_types)
         lines.append(
             '  %s = { key = "%s", name_en = "%s", name_cn = "%s", npc_name = "npc_dota_hero_%s", primary_attr = "%s", positions = %s, lane = "%s",'
-            % (key, key, en, cn, key, attr, lua_int_list(positions), lane)
+            % (key, key, en, cn, INTERNAL_NAME.get(key, key), attr, lua_int_list(positions), lane)
         )
         lines.append(
             '    abilities = { %s }, skill_build = %s,'

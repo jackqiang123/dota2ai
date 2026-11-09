@@ -47,7 +47,7 @@ end
 function M.Think(bot, snap, bb)
   local Micro = require(GetScriptDirectory() .. "/engine/micro")
   local Utility = require(GetScriptDirectory() .. "/engine/utility")
-  local diff = Utility.GetDifficulty()
+  local diff = Utility.GetDifficulty(bot)
   local target = Micro.FindLastHitTarget(bot, snap, diff.lasthitMargin)
   if target ~= nil then pcall(function() bot:Action_AttackUnit(target, false) end) return end
   if snap.deniable ~= nil and #snap.deniable > 0 then pcall(function() bot:Action_AttackUnit(snap.deniable[1], false) end) return end
