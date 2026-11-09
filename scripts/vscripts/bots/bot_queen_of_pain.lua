@@ -1,0 +1,8 @@
+-- bot_queen_of_pain.lua -- Queen of Pain 痛苦女王 (int, mid 路) -- 薄 wrapper,决策在 engine/core.lua。
+local Core = require("bots/engine/core")
+
+function Think()
+  local bot = GetBot()
+  if bot == nil then return end
+  Core.Think(bot)
+end
