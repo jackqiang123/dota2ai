@@ -1,4 +1,4 @@
--- bot_spirit_breaker.lua -- Spirit Breaker 裂魂人 (str, roam 路) -- v2.0.0 薄 wrapper,决策在 mode_dispatcher.lua。
+-- bot_spirit_breaker.lua -- Spirit Breaker 裂魂人 (str, roam 路) -- v3.0.0 薄 wrapper,决策在 mode_dispatcher.lua。
 local ModeDispatcher = require(GetScriptDirectory() .. "/mode_dispatcher")
 
 function Think()

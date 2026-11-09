@@ -1,4 +1,4 @@
--- bot_kunkka.lua -- Kunkka 昆卡 (str, mid 路) -- v2.0.0 薄 wrapper,决策在 mode_dispatcher.lua。
+-- bot_kunkka.lua -- Kunkka 昆卡 (str, mid 路) -- v3.0.0 薄 wrapper,决策在 mode_dispatcher.lua。
 local ModeDispatcher = require(GetScriptDirectory() .. "/mode_dispatcher")
 
 function Think()

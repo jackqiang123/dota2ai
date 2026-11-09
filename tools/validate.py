@@ -152,22 +152,67 @@ def main():
             if fn not in txt:
                 errors.append("mode %s missing %s" % (f.name, fn))
 
-    # 13. v2.0.0: BotLib 127 个文件; 焦点英雄 10 个有 ConsiderQ/W/E/R + SkillsComplement + 天赋 + 主位置出装>=10 件。
-    from focus_heroes import FOCUS
+    # 13. v3.0.0: BotLib 127 个文件全部有真实 Consider; 每个英雄 ConsiderQ/W/E/R +
+    # SkillsComplement + 天赋 + 分位置出装; 每个英雄至少 2 个非被动 Consider
+    # (Invoker 另计 8 个 invoked Consider; Wraith King 当前版本只有 Q 一个主动
+    # 技能, 是唯一允许 1 个的例外); 主位置出装 >=12 件, 每位置 >=8 件, 五位置互不相同。
+    import json
+    from all_heroes import ALL
     botlib = bots / "BotLib"
+    ref = json.loads((root / "tools" / "skill_names_reference.json").read_text(encoding="utf-8"))
     for h in HEROES:
-        if not (botlib / ("hero_%s.lua" % h[0])).exists():
-            errors.append("missing BotLib hero_%s.lua" % h[0])
-    for key in FOCUS:
+        key = h[0]
+        if not (botlib / ("hero_%s.lua" % key)).exists():
+            errors.append("missing BotLib hero_%s.lua" % key)
+            continue
         txt = (botlib / ("hero_%s.lua" % key)).read_text(encoding="utf-8")
         for fn in ["ConsiderQ", "ConsiderW", "ConsiderE", "ConsiderR", "SkillsComplement", "TALENTS", "sBuyList", "sSellList"]:
             if fn not in txt:
-                errors.append("focus %s missing %s" % (key, fn))
-        # 主位置出装件数: 取第一个 pos 列表的 item_ 出现次数
-        import re as _re
-        m = _re.search(r'sBuyList\["pos_\d+"\] = \{([^}]*)\}', txt)
-        if m and m.group(1).count("item_") < 10:
-            errors.append("focus %s main-pos buy list <10 items" % key)
+                errors.append("BotLib %s missing %s" % (key, fn))
+        # 非被动 Consider 计数
+        bodies = re.findall(r"function X\.Consider[QWER]\(bot, snap, ab\)\n(.*?)\nend", txt, re.S)
+        nonpassive = sum(1 for b in bodies if b.strip() != 'return 0, nil, "none"')
+        invoked = len(re.findall(r"function X\.ConsiderInvoker\w+\(bot, snap, ab\)", txt))
+        if key == "invoker":
+            if invoked < 4:
+                errors.append("invoker invoked Consider <4: %d" % invoked)
+        elif key == "wraith_king":
+            if nonpassive < 1:
+                errors.append("wraith_king non-passive Consider <1")
+        elif nonpassive < 2:
+            errors.append("%s non-passive Consider <2: %d" % (key, nonpassive))
+        # 五位置出装
+        lists = re.findall(r'sBuyList\["pos_(\d+)"\] = \{([^}]*)\}', txt)
+        if len(lists) != 5:
+            errors.append("%s sBuyList positions != 5: %d" % (key, len(lists)))
+        else:
+            sets = {tuple(sorted(x.strip() for x in items.split(",") if x.strip())) for _, items in lists}
+            if len(sets) != 5:
+                errors.append("%s sBuyList five positions not all distinct" % key)
+            for pos, items in lists:
+                n = items.count("item_")
+                if n < 8:
+                    errors.append("%s pos_%s buy list <8 items: %d" % (key, pos, n))
+            main_pos = str(h[4][0])
+            for pos, items in lists:
+                if pos == main_pos and items.count("item_") < 12:
+                    errors.append("%s main pos_%s buy list <12 items: %d" % (key, pos, items.count("item_")))
+        # 技能名对核对表
+        m = re.search(r'X\.ABILITIES = \{ Q = "([^"]+)", W = "([^"]+)", E = "([^"]+)", R = "([^"]+)" \}', txt)
+        if not m:
+            errors.append("%s ABILITIES line not found" % key)
+        else:
+            for slot, name in zip("QWER", m.groups()):
+                if ref.get(key, {}).get(slot) != name:
+                    errors.append("%s %s skill name %s != reference %s" % (key, slot, name, ref.get(key, {}).get(slot)))
+        # BotLib 内不得再有类型驱动 fallback 调用 (兜底只在 ability_item_usage wrapper 里;
+        # 生成的头部注释里提到 Micro.TryCastByType 是说明文字, 不算调用)
+        if "TryCastByType(bot" in txt:
+            errors.append("BotLib %s still calls TryCastByType fallback" % key)
+    if len(ALL) != 127:
+        errors.append("tools/all_heroes.py ALL != 127: %d" % len(ALL))
+    if set(ALL) != {h[0] for h in HEROES}:
+        errors.append("tools/all_heroes.py ALL key set != HEROES")
 
     # 14. v2.0.0: require 写法全仓库一致为 GetScriptDirectory() 写法, 不许残留 require("bots/...")。
     for f in bots.rglob("*.lua"):
@@ -199,6 +244,29 @@ def main():
         errors.append("tools/smoke_test.lua still exists (hardcoded absolute path)")
     if not (root / "tools" / "verify_v200.lua").exists():
         errors.append("tools/verify_v200.lua missing")
+
+    # 18. v3.0.0: 通用天赋表必须已删除 —— generate.py 不得再有 GENERIC_TALENTS
+    # 或“按主属性通用表”; data/talents.lua 127 条必须与 BotLib 的 TALENTS 一致。
+    gen_txt = (root / "tools" / "generate.py").read_text(encoding="utf-8")
+    if "GENERIC_TALENTS" in gen_txt:
+        errors.append("tools/generate.py still contains GENERIC_TALENTS")
+    talents_lua = (bots / "data" / "talents.lua").read_text(encoding="utf-8")
+    for h in HEROES:
+        key = h[0]
+        m = re.search(r"^\s{2}%s = \{ \[10\] = (\d), \[15\] = (\d), \[20\] = (\d), \[25\] = (\d) \}," % re.escape(key), talents_lua, re.M)
+        if not m:
+            errors.append("data/talents.lua missing %s" % key)
+            continue
+        bl = (bots / "BotLib" / ("hero_%s.lua" % key)).read_text(encoding="utf-8")
+        m2 = re.search(r"X\.TALENTS = \{ \[10\] = (\d), \[15\] = (\d), \[20\] = (\d), \[25\] = (\d) \}", bl)
+        if not m2 or m.groups() != m2.groups():
+            errors.append("talents mismatch talents.lua vs BotLib for %s" % key)
+
+    # 19. v3.0.0: verify_v300.lua 存在; tools/all_heroes.py 可导入且 127 齐。
+    if not (root / "tools" / "verify_v300.lua").exists():
+        errors.append("tools/verify_v300.lua missing")
+    if not (root / "tools" / "all_heroes.py").exists():
+        errors.append("tools/all_heroes.py missing")
 
     print("heroes: %d" % len(HEROES))
     print("per-hero files expected: %d" % (len(HEROES) * 3))

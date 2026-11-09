@@ -14,7 +14,7 @@ FOCUS = {
 "axe": {
   "abilities": {"Q": "axe_berserkers_call", "W": "axe_battle_hunger", "E": "axe_counter_helix", "R": "axe_culling_blade"},
   "talents": {10: 0, 15: 1, 20: 0, 25: 1},
-  "items": {3: ["item_tango","item_flask","item_vanguard","item_phase_boots","item_blink","item_blade_mail","item_black_king_bar","item_aghanims_shard","item_heart","item_assault","item_overwhelming_blink","item_travel_boots","item_shivas_guard","item_crimson_guard"]},
+  "items": {1: ['item_tango', 'item_flask', 'item_quelling_blade', 'item_phase_boots', 'item_vanguard', 'item_blink', 'item_blade_mail', 'item_black_king_bar', 'item_heart', 'item_assault', 'item_satanic', 'item_abyssal_blade'], 2: ['item_tango', 'item_flask', 'item_bottle', 'item_phase_boots', 'item_blink', 'item_blade_mail', 'item_black_king_bar', 'item_aghanims_scepter', 'item_heart', 'item_shivas_guard', 'item_travel_boots', 'item_overwhelming_blink'], 3: ['item_tango', 'item_flask', 'item_vanguard', 'item_phase_boots', 'item_blink', 'item_blade_mail', 'item_black_king_bar', 'item_aghanims_shard', 'item_heart', 'item_assault', 'item_overwhelming_blink', 'item_travel_boots', 'item_shivas_guard', 'item_crimson_guard'], 4: ['item_tango', 'item_flask', 'item_clarity', 'item_tranquil_boots', 'item_blink', 'item_force_staff', 'item_euls_scepter_of_divinity', 'item_black_king_bar', 'item_aghanims_shard', 'item_lotus_orb', 'item_glimmer_cape'], 5: ['item_tango', 'item_flask', 'item_clarity', 'item_ward_observer', 'item_magic_wand', 'item_arcane_boots', 'item_blink', 'item_pipe_of_insight', 'item_crimson_guard', 'item_force_staff', 'item_lotus_orb', 'item_aghanims_shard']},
   "consider": {
     "Q": """local ab = ab["axe_berserkers_call"]
   if not Skill.IsCastable(ab) then return 0, nil, "none" end
@@ -44,7 +44,7 @@ FOCUS = {
 "zeus": {
   "abilities": {"Q": "zeus_arc_lightning", "W": "zeus_lightning_bolt", "E": "zeus_static_field", "R": "zeus_thundergods_wrath"},
   "talents": {10: 1, 15: 0, 20: 1, 25: 0},
-  "items": {2: ["item_tango","item_flask","item_null_talisman","item_bottle","item_power_treads","item_aether_lens","item_aghanims_scepter","item_octarine_core","item_black_king_bar","item_refresher_orb","item_scythe_of_vyse","item_travel_boots","item_kaya_and_sange"]},
+  "items": {1: ['item_tango', 'item_flask', 'item_null_talisman', 'item_power_treads', 'item_kaya_and_sange', 'item_aghanims_scepter', 'item_black_king_bar', 'item_octarine_core', 'item_refresher_orb', 'item_scythe_of_vyse', 'item_travel_boots'], 2: ['item_tango', 'item_flask', 'item_null_talisman', 'item_bottle', 'item_power_treads', 'item_aether_lens', 'item_aghanims_scepter', 'item_octarine_core', 'item_black_king_bar', 'item_refresher_orb', 'item_scythe_of_vyse', 'item_travel_boots', 'item_kaya_and_sange'], 3: ['item_tango', 'item_flask', 'item_bracer', 'item_arcane_boots', 'item_aether_lens', 'item_aghanims_scepter', 'item_shivas_guard', 'item_black_king_bar', 'item_octarine_core', 'item_aeon_disk', 'item_travel_boots'], 4: ['item_tango', 'item_flask', 'item_clarity', 'item_arcane_boots', 'item_aether_lens', 'item_force_staff', 'item_glimmer_cape', 'item_aghanims_scepter', 'item_euls_scepter_of_divinity', 'item_black_king_bar'], 5: ['item_tango', 'item_flask', 'item_clarity', 'item_ward_observer', 'item_magic_wand', 'item_arcane_boots', 'item_glimmer_cape', 'item_force_staff', 'item_aether_lens', 'item_euls_scepter_of_divinity', 'item_aghanims_scepter']},
   "consider": {
     "Q": """local ab = ab["zeus_arc_lightning"]
   if not Skill.IsCastable(ab) then return 0, nil, "none" end
@@ -69,7 +69,7 @@ FOCUS = {
 "lion": {
   "abilities": {"Q": "lion_impale", "W": "lion_voodoo", "E": "lion_mana_drain", "R": "lion_finger_of_death"},
   "talents": {10: 0, 15: 1, 20: 0, 25: 1},
-  "items": {5: ["item_tango","item_flask","item_clarity","item_ward_observer","item_magic_wand","item_arcane_boots","item_blink","item_aether_lens","item_aghanims_scepter","item_black_king_bar","item_force_staff","item_glimmer_cape","item_scythe_of_vyse"]},
+  "items": {1: ['item_tango', 'item_flask', 'item_quelling_blade', 'item_power_treads', 'item_echo_sabre', 'item_blink', 'item_black_king_bar', 'item_aghanims_scepter', 'item_scythe_of_vyse', 'item_refresher_orb', 'item_travel_boots'], 2: ['item_tango', 'item_flask', 'item_bottle', 'item_arcane_boots', 'item_blink', 'item_aether_lens', 'item_aghanims_scepter', 'item_black_king_bar', 'item_scythe_of_vyse', 'item_octarine_core', 'item_force_staff'], 3: ['item_tango', 'item_flask', 'item_bracer', 'item_arcane_boots', 'item_blink', 'item_aether_lens', 'item_aghanims_scepter', 'item_shivas_guard', 'item_black_king_bar', 'item_aeon_disk', 'item_lotus_orb'], 4: ['item_tango', 'item_flask', 'item_clarity', 'item_tranquil_boots', 'item_blink', 'item_force_staff', 'item_glimmer_cape', 'item_aether_lens', 'item_aghanims_scepter', 'item_euls_scepter_of_divinity'], 5: ['item_tango', 'item_flask', 'item_clarity', 'item_ward_observer', 'item_magic_wand', 'item_arcane_boots', 'item_blink', 'item_aether_lens', 'item_aghanims_scepter', 'item_black_king_bar', 'item_force_staff', 'item_glimmer_cape', 'item_scythe_of_vyse']},
   "consider": {
     "Q": """local ab = ab["lion_impale"]
   if not Skill.IsCastable(ab) then return 0, nil, "none" end
@@ -100,7 +100,7 @@ FOCUS = {
 "crystal_maiden": {
   "abilities": {"Q": "crystal_maiden_crystal_nova", "W": "crystal_maiden_frostbite", "E": "crystal_maiden_brilliance_aura", "R": "crystal_maiden_freezing_field"},
   "talents": {10: 1, 15: 0, 20: 1, 25: 0},
-  "items": {5: ["item_tango","item_flask","item_clarity","item_ward_observer","item_magic_wand","item_arcane_boots","item_glimmer_cape","item_force_staff","item_aether_lens","item_black_king_bar","item_aghanims_scepter","item_ghost_scepter","item_euls_scepter_of_divinity"]},
+  "items": {1: ['item_tango', 'item_flask', 'item_quelling_blade', 'item_power_treads', 'item_dragon_lance', 'item_aghanims_scepter', 'item_black_king_bar', 'item_scythe_of_vyse', 'item_octarine_core', 'item_travel_boots', 'item_ghost_scepter'], 2: ['item_tango', 'item_flask', 'item_bottle', 'item_arcane_boots', 'item_aether_lens', 'item_aghanims_scepter', 'item_black_king_bar', 'item_octarine_core', 'item_scythe_of_vyse', 'item_ghost_scepter', 'item_force_staff'], 3: ['item_tango', 'item_flask', 'item_bracer', 'item_arcane_boots', 'item_glimmer_cape', 'item_force_staff', 'item_aghanims_scepter', 'item_shivas_guard', 'item_black_king_bar', 'item_lotus_orb', 'item_aeon_disk'], 4: ['item_tango', 'item_flask', 'item_clarity', 'item_arcane_boots', 'item_force_staff', 'item_glimmer_cape', 'item_euls_scepter_of_divinity', 'item_aether_lens', 'item_aghanims_scepter', 'item_ghost_scepter'], 5: ['item_tango', 'item_flask', 'item_clarity', 'item_ward_observer', 'item_magic_wand', 'item_arcane_boots', 'item_glimmer_cape', 'item_force_staff', 'item_aether_lens', 'item_black_king_bar', 'item_aghanims_scepter', 'item_ghost_scepter', 'item_euls_scepter_of_divinity']},
   "consider": {
     "Q": """local ab = ab["crystal_maiden_crystal_nova"]
   if not Skill.IsCastable(ab) then return 0, nil, "none" end
@@ -125,7 +125,7 @@ FOCUS = {
 "magnus": {
   "abilities": {"Q": "magnus_shockwave", "W": "magnus_empower", "E": "magnus_skewer", "R": "magnus_reverse_polarity"},
   "talents": {10: 0, 15: 1, 20: 0, 25: 1},
-  "items": {3: ["item_tango","item_flask","item_bracer","item_phase_boots","item_blink","item_black_king_bar","item_aghanims_scepter","item_refresher_orb","item_assault","item_shivas_guard","item_heart","item_echo_sabre","item_harpoon"]},
+  "items": {1: ['item_tango', 'item_flask', 'item_quelling_blade', 'item_power_treads', 'item_echo_sabre', 'item_harpoon', 'item_black_king_bar', 'item_satanic', 'item_assault', 'item_heart', 'item_travel_boots', 'item_abyssal_blade'], 2: ['item_tango', 'item_flask', 'item_bottle', 'item_phase_boots', 'item_blink', 'item_echo_sabre', 'item_black_king_bar', 'item_aghanims_scepter', 'item_refresher_orb', 'item_shivas_guard', 'item_travel_boots'], 3: ['item_tango', 'item_flask', 'item_bracer', 'item_phase_boots', 'item_blink', 'item_black_king_bar', 'item_aghanims_scepter', 'item_refresher_orb', 'item_assault', 'item_shivas_guard', 'item_heart', 'item_echo_sabre', 'item_harpoon'], 4: ['item_tango', 'item_flask', 'item_clarity', 'item_arcane_boots', 'item_blink', 'item_force_staff', 'item_aghanims_scepter', 'item_black_king_bar', 'item_lotus_orb', 'item_glimmer_cape'], 5: ['item_tango', 'item_flask', 'item_clarity', 'item_ward_observer', 'item_magic_wand', 'item_arcane_boots', 'item_blink', 'item_force_staff', 'item_glimmer_cape', 'item_lotus_orb', 'item_aghanims_shard']},
   "consider": {
     "Q": """local ab = ab["magnus_shockwave"]
   if not Skill.IsCastable(ab) then return 0, nil, "none" end
@@ -156,7 +156,7 @@ FOCUS = {
 "faceless_void": {
   "abilities": {"Q": "faceless_void_time_walk", "W": "faceless_void_time_dilation", "E": "faceless_void_time_lock", "R": "faceless_void_chronosphere"},
   "talents": {10: 1, 15: 0, 20: 1, 25: 0},
-  "items": {1: ["item_tango","item_flask","item_quelling_blade","item_wraith_band","item_power_treads","item_maelstrom","item_black_king_bar","item_manta","item_satanic","item_butterfly","item_abyssal_blade","item_mjollnir","item_travel_boots"]},
+  "items": {1: ['item_tango', 'item_flask', 'item_quelling_blade', 'item_wraith_band', 'item_power_treads', 'item_maelstrom', 'item_black_king_bar', 'item_manta', 'item_satanic', 'item_butterfly', 'item_abyssal_blade', 'item_mjollnir', 'item_travel_boots'], 2: ['item_tango', 'item_flask', 'item_bottle', 'item_power_treads', 'item_maelstrom', 'item_black_king_bar', 'item_manta', 'item_aghanims_scepter', 'item_satanic', 'item_butterfly', 'item_travel_boots'], 3: ['item_tango', 'item_flask', 'item_bracer', 'item_phase_boots', 'item_vanguard', 'item_blink', 'item_black_king_bar', 'item_aghanims_scepter', 'item_shivas_guard', 'item_heart', 'item_assault'], 4: ['item_tango', 'item_flask', 'item_clarity', 'item_arcane_boots', 'item_blink', 'item_aghanims_scepter', 'item_black_king_bar', 'item_force_staff', 'item_lotus_orb', 'item_aeon_disk'], 5: ['item_tango', 'item_flask', 'item_clarity', 'item_ward_observer', 'item_magic_wand', 'item_arcane_boots', 'item_blink', 'item_force_staff', 'item_glimmer_cape', 'item_aghanims_scepter', 'item_lotus_orb']},
   "consider": {
     "Q": """local ab = ab["faceless_void_time_walk"]
   if not Skill.IsCastable(ab) then return 0, nil, "none" end
@@ -184,7 +184,7 @@ FOCUS = {
 "enigma": {
   "abilities": {"Q": "enigma_malefice", "W": "enigma_demonic_conversion", "E": "enigma_midnight_pulse", "R": "enigma_black_hole"},
   "talents": {10: 0, 15: 1, 20: 0, 25: 1},
-  "items": {3: ["item_tango","item_flask","item_bracer","item_arcane_boots","item_blink","item_black_king_bar","item_aghanims_scepter","item_refresher_orb","item_shivas_guard","item_octarine_core","item_travel_boots","item_aeon_disk","item_heart"]},
+  "items": {1: ['item_tango', 'item_flask', 'item_quelling_blade', 'item_power_treads', 'item_maelstrom', 'item_black_king_bar', 'item_aghanims_scepter', 'item_refresher_orb', 'item_octarine_core', 'item_mjollnir', 'item_travel_boots'], 2: ['item_tango', 'item_flask', 'item_bottle', 'item_arcane_boots', 'item_blink', 'item_black_king_bar', 'item_aghanims_scepter', 'item_refresher_orb', 'item_octarine_core', 'item_shivas_guard', 'item_travel_boots'], 3: ['item_tango', 'item_flask', 'item_bracer', 'item_arcane_boots', 'item_blink', 'item_black_king_bar', 'item_aghanims_scepter', 'item_refresher_orb', 'item_shivas_guard', 'item_octarine_core', 'item_travel_boots', 'item_aeon_disk', 'item_heart'], 4: ['item_tango', 'item_flask', 'item_clarity', 'item_arcane_boots', 'item_blink', 'item_aghanims_scepter', 'item_black_king_bar', 'item_force_staff', 'item_aeon_disk', 'item_lotus_orb'], 5: ['item_tango', 'item_flask', 'item_clarity', 'item_ward_observer', 'item_magic_wand', 'item_arcane_boots', 'item_blink', 'item_force_staff', 'item_glimmer_cape', 'item_aghanims_scepter', 'item_euls_scepter_of_divinity']},
   "consider": {
     "Q": """local ab = ab["enigma_malefice"]
   if not Skill.IsCastable(ab) then return 0, nil, "none" end
@@ -210,9 +210,9 @@ FOCUS = {
   },
 },
 "dazzle": {
-  "abilities": {"Q": "dazzle_poison_touch", "W": "dazzle_shallow_grave", "E": "dazzle_shadow_wave", "R": "dazzle_bad_juju"},
+  "abilities": {"Q": "dazzle_poison_touch", "W": "dazzle_shallow_grave", "E": "dazzle_shadow_wave", "R": "dazzle_weave"},
   "talents": {10: 1, 15: 0, 20: 1, 25: 0},
-  "items": {5: ["item_tango","item_flask","item_clarity","item_ward_observer","item_magic_wand","item_arcane_boots","item_force_staff","item_glimmer_cape","item_aether_lens","item_aghanims_scepter","item_lotus_orb","item_black_king_bar","item_ghost_scepter"]},
+  "items": {1: ['item_tango', 'item_flask', 'item_quelling_blade', 'item_power_treads', 'item_desolator', 'item_black_king_bar', 'item_aghanims_scepter', 'item_scythe_of_vyse', 'item_octarine_core', 'item_travel_boots', 'item_assault'], 2: ['item_tango', 'item_flask', 'item_bottle', 'item_arcane_boots', 'item_aether_lens', 'item_aghanims_scepter', 'item_black_king_bar', 'item_octarine_core', 'item_scythe_of_vyse', 'item_force_staff', 'item_ghost_scepter'], 3: ['item_tango', 'item_flask', 'item_bracer', 'item_arcane_boots', 'item_force_staff', 'item_glimmer_cape', 'item_aghanims_scepter', 'item_shivas_guard', 'item_black_king_bar', 'item_lotus_orb', 'item_aeon_disk'], 4: ['item_tango', 'item_flask', 'item_clarity', 'item_arcane_boots', 'item_force_staff', 'item_glimmer_cape', 'item_euls_scepter_of_divinity', 'item_aether_lens', 'item_aghanims_scepter', 'item_lotus_orb'], 5: ['item_tango', 'item_flask', 'item_clarity', 'item_ward_observer', 'item_magic_wand', 'item_arcane_boots', 'item_force_staff', 'item_glimmer_cape', 'item_aether_lens', 'item_aghanims_scepter', 'item_lotus_orb', 'item_black_king_bar', 'item_ghost_scepter']},
   "consider": {
     "Q": """local ab = ab["dazzle_poison_touch"]
   if not Skill.IsCastable(ab) then return 0, nil, "none" end
@@ -230,7 +230,7 @@ FOCUS = {
   local ally, pct = Skill.LowestHpAllyPct(snap)
   if ally ~= nil and pct < 0.6 then return 0.75, ally, "unit" end
   return 0, nil, "none\"""",
-    "R": """local ab = ab["dazzle_bad_juju"]
+    "R": """local ab = ab["dazzle_weave"]
   if not Skill.IsCastable(ab) then return 0, nil, "none" end
   if (snap.numEnemies or 0) >= 2 then return 0.55, nil, "none" end
   return 0, nil, "none\"""",
@@ -239,7 +239,7 @@ FOCUS = {
 "oracle": {
   "abilities": {"Q": "oracle_fortunes_end", "W": "oracle_fates_edict", "E": "oracle_purifying_flames", "R": "oracle_false_promise"},
   "talents": {10: 0, 15: 1, 20: 0, 25: 1},
-  "items": {5: ["item_tango","item_flask","item_clarity","item_ward_observer","item_magic_wand","item_arcane_boots","item_force_staff","item_glimmer_cape","item_aether_lens","item_aghanims_scepter","item_euls_scepter_of_divinity","item_ghost_scepter","item_lotus_orb"]},
+  "items": {1: ['item_tango', 'item_flask', 'item_quelling_blade', 'item_power_treads', 'item_dragon_lance', 'item_aghanims_scepter', 'item_black_king_bar', 'item_scythe_of_vyse', 'item_octarine_core', 'item_travel_boots', 'item_ghost_scepter'], 2: ['item_tango', 'item_flask', 'item_bottle', 'item_arcane_boots', 'item_aether_lens', 'item_aghanims_scepter', 'item_black_king_bar', 'item_octarine_core', 'item_scythe_of_vyse', 'item_force_staff', 'item_euls_scepter_of_divinity'], 3: ['item_tango', 'item_flask', 'item_bracer', 'item_arcane_boots', 'item_force_staff', 'item_glimmer_cape', 'item_aghanims_scepter', 'item_lotus_orb', 'item_black_king_bar', 'item_aeon_disk', 'item_shivas_guard'], 4: ['item_tango', 'item_flask', 'item_clarity', 'item_arcane_boots', 'item_force_staff', 'item_glimmer_cape', 'item_euls_scepter_of_divinity', 'item_aether_lens', 'item_aghanims_scepter', 'item_ghost_scepter'], 5: ['item_tango', 'item_flask', 'item_clarity', 'item_ward_observer', 'item_magic_wand', 'item_arcane_boots', 'item_force_staff', 'item_glimmer_cape', 'item_aether_lens', 'item_aghanims_scepter', 'item_euls_scepter_of_divinity', 'item_ghost_scepter', 'item_lotus_orb']},
   "consider": {
     "Q": """local ab = ab["oracle_fortunes_end"]
   if not Skill.IsCastable(ab) then return 0, nil, "none" end
@@ -267,7 +267,7 @@ FOCUS = {
 "huskar": {
   "abilities": {"Q": "huskar_inner_fire", "W": "huskar_burning_spear", "E": "huskar_berserkers_blood", "R": "huskar_life_break"},
   "talents": {10: 1, 15: 0, 20: 1, 25: 0},
-  "items": {1: ["item_tango","item_flask","item_bracer","item_phase_boots","item_armlet","item_black_king_bar","item_satanic","item_aghanims_scepter","item_assault","item_heavens_halberd","item_travel_boots","item_heart","item_sange_and_yasha"]},
+  "items": {1: ['item_tango', 'item_flask', 'item_bracer', 'item_phase_boots', 'item_armlet', 'item_black_king_bar', 'item_satanic', 'item_aghanims_scepter', 'item_assault', 'item_heavens_halberd', 'item_travel_boots', 'item_heart', 'item_sange_and_yasha'], 2: ['item_tango', 'item_flask', 'item_bottle', 'item_phase_boots', 'item_armlet', 'item_black_king_bar', 'item_satanic', 'item_aghanims_scepter', 'item_assault', 'item_heavens_halberd', 'item_travel_boots'], 3: ['item_tango', 'item_flask', 'item_bracer', 'item_phase_boots', 'item_armlet', 'item_black_king_bar', 'item_heavens_halberd', 'item_assault', 'item_heart', 'item_aghanims_scepter', 'item_lotus_orb'], 4: ['item_tango', 'item_flask', 'item_clarity', 'item_arcane_boots', 'item_armlet', 'item_force_staff', 'item_black_king_bar', 'item_aghanims_scepter', 'item_lotus_orb', 'item_heavens_halberd'], 5: ['item_tango', 'item_flask', 'item_clarity', 'item_ward_observer', 'item_magic_wand', 'item_arcane_boots', 'item_armlet', 'item_glimmer_cape', 'item_force_staff', 'item_lotus_orb', 'item_aghanims_shard']},
   "consider": {
     "Q": """local ab = ab["huskar_inner_fire"]
   if not Skill.IsCastable(ab) then return 0, nil, "none" end

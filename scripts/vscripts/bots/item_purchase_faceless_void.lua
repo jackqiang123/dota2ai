@@ -1,4 +1,4 @@
--- item_purchase_faceless_void.lua -- Faceless Void 虚空假面 -- v2.0.0: 出装走 item_purchase_generic.lua 的状态机,
+-- item_purchase_faceless_void.lua -- Faceless Void 虚空假面 -- v3.0.0: 出装走 item_purchase_generic.lua 的状态机,
 -- 读 BotLib 的 sBuyList / sSellList。
 local Generic = require(GetScriptDirectory() .. "/item_purchase_generic")
 

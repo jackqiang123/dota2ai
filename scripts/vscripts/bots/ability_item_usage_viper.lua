@@ -1,4 +1,4 @@
--- ability_item_usage_viper.lua -- Viper 毒龙 -- v2.0.0: 技能走 BotLib SkillsComplement(),
+-- ability_item_usage_viper.lua -- Viper 毒龙 -- v3.0.0: 技能走 BotLib SkillsComplement(),
 -- 加点走 BotLib 的 SKILL_BUILD, 天赋级走 TALENTS。通用入口见 ability_item_usage_generic.lua。
 local Skill = require(GetScriptDirectory() .. "/engine/skill")
 local Heroes = require(GetScriptDirectory() .. "/data/heroes")

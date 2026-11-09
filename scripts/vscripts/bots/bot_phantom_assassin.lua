@@ -1,4 +1,4 @@
--- bot_phantom_assassin.lua -- Phantom Assassin 幻影刺客 (agi, safelane 路) -- v2.0.0 薄 wrapper,决策在 mode_dispatcher.lua。
+-- bot_phantom_assassin.lua -- Phantom Assassin 幻影刺客 (agi, safelane 路) -- v3.0.0 薄 wrapper,决策在 mode_dispatcher.lua。
 local ModeDispatcher = require(GetScriptDirectory() .. "/mode_dispatcher")
 
 function Think()

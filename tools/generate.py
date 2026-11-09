@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""生成器 v2.0.0: 读 tools/heroes_data.py + tools/focus_heroes.py,
+"""生成器 v3.0.0: 读 tools/heroes_data.py + tools/all_heroes.py (127 全量),
 产出 data/heroes.lua + data/talents.lua + 每个英雄 3 个 wrapper + BotLib/hero_<name>.lua。
-可复现: 改 heroes_data.py / focus_heroes.py 后重新跑本脚本即可随版本更新,
+可复现: 改 tools/ 下的数据文件后重新跑本脚本即可随版本更新,
 跑完 git diff 应为 0 (除非数据改了)。
 用法: python3 tools/generate.py [--root ~/workspace/dota2-ai]
 """
@@ -11,7 +11,8 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from heroes_data import HEROES  # noqa: E402
-from focus_heroes import FOCUS, FOCUS_HEROES  # noqa: E402
+from focus_heroes import FOCUS  # noqa: E402
+from all_heroes import ALL  # noqa: E402
 
 ROLE_EARLY = {
     1: ["item_tango", "item_flask", "item_quelling_blade", "item_wraith_band", "item_power_treads", "item_magic_wand"],
@@ -29,12 +30,14 @@ ROLE_LATE = {
 }
 SITUATIONAL = ["item_black_king_bar", "item_linkens_sphere", "item_scythe_of_vyse", "item_nullifier", "item_monkey_king_bar"]
 SELL_LIST = ["item_tango", "item_flask", "item_clarity", "item_quelling_blade", "item_wraith_band", "item_bracer", "item_null_talisman"]
-# 通用天赋表 (按主属性, 0=左/1=右, 本项目自选, 非官方推荐)。
-GENERIC_TALENTS = {
-    "str": {10: 0, 15: 0, 20: 0, 25: 0},
-    "agi": {10: 1, 15: 1, 20: 1, 25: 1},
-    "int": {10: 0, 15: 1, 20: 0, 25: 1},
-    "universal": {10: 0, 15: 0, 20: 1, 25: 0},
+# 分位置卖出表 (v3.0.0; item_purchase_generic.lua 目前只读 sBuyList,
+# sSellList / sSellListByPos 为数据预留, 购买状态机尚未消费)。
+SELL_LISTS = {
+    1: ["item_tango", "item_flask", "item_quelling_blade", "item_wraith_band"],
+    2: ["item_tango", "item_flask", "item_null_talisman", "item_bottle"],
+    3: ["item_tango", "item_flask", "item_bracer"],
+    4: ["item_tango", "item_flask", "item_clarity", "item_ward_observer"],
+    5: ["item_tango", "item_flask", "item_clarity", "item_ward_observer", "item_magic_wand"],
 }
 
 
@@ -93,30 +96,71 @@ def talent_lua(t):
 
 
 def buy_lists(key, hero):
-    """返回 {pos: [>=10 件]}。焦点英雄用 focus_heroes.py 的表, 其余用位置模板+招牌装。"""
-    _k, _en, _cn, attr, positions, _lane, _ab, _prio, sig = hero
-    if key in FOCUS:
-        out = {}
-        main = FOCUS[key]["items"]
-        for pos in positions:
-            out[pos] = list(main.get(pos) or main.get(positions[0]) or [])
-        for pos in (1, 2, 3, 4, 5):
-            if pos not in out:
-                out[pos] = list(main.get(positions[0]) or [])
-        return out
+    """返回 {pos: [>=8 件]}。v3.0.0: 全部 127 个英雄都用 tools/all_heroes.py
+    里按位置写的出装表 (五个位置互不相同, 主位置 >=12 件)。"""
+    data = ALL[key]
     out = {}
     for pos in (1, 2, 3, 4, 5):
-        out[pos] = dedup(ROLE_EARLY[pos] + list(sig) + ["item_black_king_bar", "item_aghanims_shard"] + ROLE_LATE[pos])
+        lst = data["items"].get(pos)
+        assert lst and len(lst) >= 8, "%s pos_%d items < 8" % (key, pos)
+        out[pos] = list(lst)
+    assert len(set(tuple(v) for v in out.values())) == 5, "%s buy lists not distinct" % key
     return out
+
+
+def _skills_complement_lines(try_list):
+    """生成 SkillsComplement() 的 Lua 代码行。
+    try_list: [(fn_name, kind, key)] 按顺序尝试, desire >= 0.5 且
+    Skill.Cast 成功即返回 true; 全部失败返回 false (wrapper 再走
+    Micro.TryCastByType 兜底, 目标触发率 0)。
+    kind == "slot": 按 X.ABILITIES[slot] 取技能 (Q/W/E/R);
+    kind == "name": 按完整内部名取技能 (Invoker 的 invoked 技能)。"""
+    L = []
+    L.append("function X.SkillsComplement(bot, snap)")
+    L.append("  if bot == nil or snap == nil then return false end")
+    L.append("  local ab = Skill.GetAbilityMap(bot)")
+    for fn_name, kind, key in try_list:
+        L.append("  do")
+        L.append("    local fn = X[\"%s\"]" % fn_name)
+        L.append("    if fn ~= nil then")
+        L.append("      local desire, target, castType = fn(bot, snap, ab)")
+        L.append("      if desire ~= nil and desire >= 0.5 then")
+        if kind == "name":
+            L.append("        local ability = ab[\"%s\"]" % key)
+        else:
+            L.append("        local ability = ab[X.ABILITIES[\"%s\"]]" % key)
+        L.append("        if ability ~= nil and Skill.Cast(bot, ability, target, castType) then")
+        if kind == "slot" and key == "R":
+            L.append("          local loc = nil")
+            L.append("          if target ~= nil then local ok, l = pcall(function() return target:GetLocation() end) if ok then loc = l end end")
+            L.append("          if loc ~= nil then Team.ReportComboWindow(bot, loc) end")
+        L.append("          return true")
+        L.append("        end")
+        L.append("      end")
+        L.append("    end")
+        L.append("  end")
+    L.append("  return false")
+    L.append("end")
+    return L
+
+
+def _fn_name_for_invoked(spell):
+    # invoker_cold_snap -> ConsiderInvokerColdSnap
+    parts = spell.split("_")[1:]
+    return "ConsiderInvoker" + "".join(p.capitalize() for p in parts)
 
 
 def botlib_text(key, hero):
     _k, en, cn, attr, positions, lane, ab_types, prio, sig = hero
+    data = ALL[key]
     build = skill_build(prio, len(ab_types))
-    talents = FOCUS[key]["talents"] if key in FOCUS else GENERIC_TALENTS[attr]
+    talents = data["talents"]
     buys = buy_lists(key, hero)
     lines = []
-    lines.append("-- hero_%s.lua -- %s %s -- v2.0.0 BotLib 英雄文件 (由 tools/generate.py 生成, 不要手改)。\n-- 结构 (方法来源: OHA ARCHITECTURE.md 第 3 节描述的分段, 实现自己写):\n-- 天赋表 / 加点表 / 分位置出装表 / 技能名表 / SkillsComplement() + ConsiderX()。\n-- 焦点英雄: 真实 Consider 逻辑 (见 tools/focus_heroes.py); 其余英雄: 通用类型驱动 fallback。" % (key, en, cn))
+    lines.append("-- hero_%s.lua -- %s %s -- v3.0.0 BotLib 英雄文件 (由 tools/generate.py 生成, 不要手改)。\n-- 结构 (方法来源: OHA ARCHITECTURE.md 第 3 节描述的分段, 实现自己写):\n-- 天赋表 / 加点表 / 分位置出装表 / 技能名表 / SkillsComplement() + ConsiderX()。\n-- v3.0.0: 127 个英雄全部有真实 Consider 逻辑 (见 tools/all_heroes.py);\n-- fallback 只作兜底: SkillsComplement 全返回 0 时 ability_item_usage wrapper 才走\n-- Micro.TryCastByType, 触发率目标为 0。" % (key, en, cn))
+    if data.get("limitations"):
+        for lim_line in str(data["limitations"]).split("\n"):
+            lines.append("-- 限制: %s" % lim_line)
     lines.append('local Skill = require(GetScriptDirectory() .. "/engine/skill")')
     lines.append('local Micro = require(GetScriptDirectory() .. "/engine/micro")')
     lines.append('local Team = require(GetScriptDirectory() .. "/engine/team")')
@@ -129,44 +173,31 @@ def botlib_text(key, hero):
     for pos in (1, 2, 3, 4, 5):
         lines.append('X.sBuyList["pos_%d"] = %s' % (pos, lua_str_list(buys[pos])))
     lines.append("X.sSellList = %s" % lua_str_list(SELL_LIST))
-    if key in FOCUS:
-        ab = FOCUS[key]["abilities"]
-        lines.append("X.ABILITIES = { Q = \"%s\", W = \"%s\", E = \"%s\", R = \"%s\" }" % (ab["Q"], ab["W"], ab["E"], ab["R"]))
-        for slot in ("Q", "W", "E", "R"):
-            body = FOCUS[key]["consider"][slot]
-            lines.append("function X.Consider%s(bot, snap, ab)\n%s\nend" % (slot, body))
-        lines.append("function X.SkillsComplement(bot, snap)")
-        lines.append("  if bot == nil or snap == nil then return false end")
-        lines.append("  local ab = Skill.GetAbilityMap(bot)")
-        lines.append("  for _, slot in ipairs({\"R\", \"Q\", \"W\", \"E\"}) do")
-        lines.append("    local fn = X[\"Consider\" .. slot]")
-        lines.append("    if fn ~= nil then")
-        lines.append("      local desire, target, castType = fn(bot, snap, ab)")
-        lines.append("      if desire ~= nil and desire >= 0.5 then")
-        lines.append('        local name = X.ABILITIES[slot]')
-        lines.append("        local ability = ab[name]")
-        lines.append("        if ability ~= nil and Skill.Cast(bot, ability, target, castType) then")
-        lines.append("          if slot == \"R\" then")
-        lines.append("            local loc = nil")
-        lines.append("            if target ~= nil then local ok, l = pcall(function() return target:GetLocation() end) if ok then loc = l end end")
-        lines.append("            if loc ~= nil then Team.ReportComboWindow(bot, loc) end")
-        lines.append("          end")
-        lines.append("          return true")
-        lines.append("        end")
-        lines.append("      end")
-        lines.append("    end")
-        lines.append("  end")
-        lines.append("  return false")
-        lines.append("end")
+    lines.append("X.sSellListByPos = {}")
+    for pos in (1, 2, 3, 4, 5):
+        lines.append('X.sSellListByPos["pos_%d"] = %s' % (pos, lua_str_list(SELL_LISTS[pos])))
+    ab = data["abilities"]
+    lines.append("X.ABILITIES = { Q = \"%s\", W = \"%s\", E = \"%s\", R = \"%s\" }" % (ab["Q"], ab["W"], ab["E"], ab["R"]))
+    for slot in ("Q", "W", "E", "R"):
+        body = data["consider"][slot]
+        lines.append("function X.Consider%s(bot, snap, ab)\n%s\nend" % (slot, body))
+    if data.get("invoked"):
+        # Invoker: Q/W/E 是被动球 (Consider 只返回 0), R Invoke 只做可用性检查;
+        # 真正的施法逻辑在 8 个 invoked 技能的 ConsiderInvoker* 里。
+        lines.append("-- Invoker: 球 Quas/Wex/Exort 为被动, 不施放; Invoke(R) 只检查可用性。")
+        lines.append("-- 调用技能按球组合生成, 每次最多持有 2 个; 本表建模 8 个常用 invoked 技能。")
+        invoked = data["invoked"]
+        fn_names = []
+        for spell in sorted(invoked.keys()):
+            fn = _fn_name_for_invoked(spell)
+            fn_names.append(fn)
+            lines.append("function X.%s(bot, snap, ab)\n%s\nend" % (fn, invoked[spell]))
+        lines.append("X.INVOKED = %s" % lua_str_list(sorted(invoked.keys())))
+        try_list = [(fn, "name", spell) for fn, spell in zip(fn_names, sorted(invoked.keys()))]
+        try_list += [("ConsiderR", "slot", "R"), ("ConsiderQ", "slot", "Q"), ("ConsiderW", "slot", "W"), ("ConsiderE", "slot", "E")]
+        lines.extend(_skills_complement_lines(try_list))
     else:
-        lines.append("X.ABILITIES = {}")
-        lines.append("-- 通用版: 无专属 Consider, 直接走 v1.1 的类型驱动 fallback。")
-        lines.append("function X.SkillsComplement(bot, snap)")
-        lines.append("  if bot == nil or snap == nil then return false end")
-        lines.append("  local heroData = Heroes[X.KEY]")
-        lines.append("  if heroData == nil then return false end")
-        lines.append("  return Micro.TryCastByType(bot, snap, heroData)")
-        lines.append("end")
+        lines.extend(_skills_complement_lines([("ConsiderR", "slot", "R"), ("ConsiderQ", "slot", "Q"), ("ConsiderW", "slot", "W"), ("ConsiderE", "slot", "E")]))
     lines.append("return X")
     return "\n".join(lines) + "\n"
 
@@ -215,11 +246,11 @@ def main():
     # ---- data/talents.lua ----
     tlines = []
     tlines.append("-- talents.lua -- 由 tools/generate.py 生成,不要手改。")
-    tlines.append("-- 天赋表: 焦点英雄用 tools/focus_heroes.py 的自选表, 其余按主属性通用表。")
+    tlines.append("-- 天赋表: 127 个英雄各自的天赋表, 见 tools/all_heroes.py (v3.0.0 已删除按主属性的通用表)。")
     tlines.append("-- 格式: [10]/[15]/[20]/[25] = 0 左 / 1 右。")
     tlines.append("local TALENTS = {")
     for key, en, cn, attr, positions, lane, ab_types, prio, sig in HEROES:
-        t = FOCUS[key]["talents"] if key in FOCUS else GENERIC_TALENTS[attr]
+        t = ALL[key]["talents"]
         tlines.append('  %s = %s,' % (key, talent_lua(t)))
     tlines.append("}")
     tlines.append("return TALENTS")
@@ -231,7 +262,7 @@ def main():
         build = skill_build(prio, len(ab_types))
         (botlib_dir / ("hero_%s.lua" % key)).write_text(botlib_text(key, (key, en, cn, attr, positions, lane, ab_types, prio, sig)), encoding="utf-8")
         (bots / ("bot_%s.lua" % key)).write_text(
-            "-- bot_%s.lua -- %s %s (%s, %s 路) -- v2.0.0 薄 wrapper,决策在 mode_dispatcher.lua。\n"
+            "-- bot_%s.lua -- %s %s (%s, %s 路) -- v3.0.0 薄 wrapper,决策在 mode_dispatcher.lua。\n"
             'local ModeDispatcher = require(GetScriptDirectory() .. "/mode_dispatcher")\n\n'
             "function Think()\n"
             "  local bot = GetBot()\n"
@@ -241,7 +272,7 @@ def main():
             encoding="utf-8",
         )
         (bots / ("ability_item_usage_%s.lua" % key)).write_text(
-            "-- ability_item_usage_%s.lua -- %s %s -- v2.0.0: 技能走 BotLib SkillsComplement(),\n-- 加点走 BotLib 的 SKILL_BUILD, 天赋级走 TALENTS。通用入口见 ability_item_usage_generic.lua。\n"
+            "-- ability_item_usage_%s.lua -- %s %s -- v3.0.0: 技能走 BotLib SkillsComplement(),\n-- 加点走 BotLib 的 SKILL_BUILD, 天赋级走 TALENTS。通用入口见 ability_item_usage_generic.lua。\n"
             'local Skill = require(GetScriptDirectory() .. "/engine/skill")\n'
             'local Heroes = require(GetScriptDirectory() .. "/data/heroes")\n'
             'local Micro = require(GetScriptDirectory() .. "/engine/micro")\n'
@@ -282,7 +313,7 @@ def main():
             encoding="utf-8",
         )
         (bots / ("item_purchase_%s.lua" % key)).write_text(
-            "-- item_purchase_%s.lua -- %s %s -- v2.0.0: 出装走 item_purchase_generic.lua 的状态机,\n-- 读 BotLib 的 sBuyList / sSellList。\n"
+            "-- item_purchase_%s.lua -- %s %s -- v3.0.0: 出装走 item_purchase_generic.lua 的状态机,\n-- 读 BotLib 的 sBuyList / sSellList。\n"
             'local Generic = require(GetScriptDirectory() .. "/item_purchase_generic")\n\n'
             "function ItemPurchaseThink()\n"
             "  local bot = GetBot()\n"
@@ -294,7 +325,7 @@ def main():
         count += 1
     print("heroes: %d" % len(HEROES))
     print("per-hero files: %d (3 x %d) + BotLib %d" % (count * 3, count, count))
-    print("focus heroes: %d (%s)" % (len(FOCUS_HEROES), ", ".join(FOCUS_HEROES)))
+    print("deep heroes (real Consider): %d / %d" % (len(ALL), len(HEROES)))
     print("heroes.lua: %s" % (data_dir / "heroes.lua"))
 
 

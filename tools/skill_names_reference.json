@@ -1,0 +1,891 @@
+{
+ "abaddon": {
+  "Q": "abaddon_death_coil",
+  "W": "abaddon_aphotic_shield",
+  "E": "abaddon_frostmourne",
+  "R": "abaddon_borrowed_time",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "alchemist": {
+  "Q": "alchemist_acid_spray",
+  "W": "alchemist_unstable_concoction",
+  "E": "alchemist_goblins_greed",
+  "R": "alchemist_chemical_rage",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "ancient_apparition": {
+  "Q": "ancient_apparition_cold_feet",
+  "W": "ancient_apparition_ice_vortex",
+  "E": "ancient_apparition_chilling_touch",
+  "R": "ancient_apparition_ice_blast",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "axe": {
+  "Q": "axe_berserkers_call",
+  "W": "axe_battle_hunger",
+  "E": "axe_counter_helix",
+  "R": "axe_culling_blade",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "bane": {
+  "Q": "bane_enfeeble",
+  "W": "bane_brain_sap",
+  "E": "bane_nightmare",
+  "R": "bane_fiends_grip",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "batrider": {
+  "Q": "batrider_sticky_napalm",
+  "W": "batrider_flamebreak",
+  "E": "batrider_firefly",
+  "R": "batrider_flaming_lasso",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "beastmaster": {
+  "Q": "beastmaster_wild_axes",
+  "W": "beastmaster_call_of_the_wild",
+  "E": "beastmaster_call_of_the_wild_boar",
+  "R": "beastmaster_primal_roar",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only) | v3.0 corrected R: beastmaster_inner_beast -> beastmaster_primal_roar (worker-flagged, current Dota)"
+ },
+ "bloodseeker": {
+  "Q": "bloodseeker_bloodrage",
+  "W": "bloodseeker_blood_bath",
+  "E": "bloodseeker_thirst",
+  "R": "bloodseeker_rupture",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "bounty_hunter": {
+  "Q": "bounty_hunter_shuriken_toss",
+  "W": "bounty_hunter_jinada",
+  "E": "bounty_hunter_wind_walk",
+  "R": "bounty_hunter_track",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "brewmaster": {
+  "Q": "brewmaster_thunder_clap",
+  "W": "brewmaster_drunken_haze",
+  "E": "brewmaster_drunken_brawler",
+  "R": "brewmaster_primal_split",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "bristleback": {
+  "Q": "bristleback_viscous_nasal_goo",
+  "W": "bristleback_quill_spray",
+  "E": "bristleback_bristleback",
+  "R": "bristleback_warpath",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "broodmother": {
+  "Q": "broodmother_spawn_spiderlings",
+  "W": "broodmother_spin_web",
+  "E": "broodmother_incapacitating_bite",
+  "R": "broodmother_insatiable_hunger",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "chaos_knight": {
+  "Q": "chaos_knight_chaos_bolt",
+  "W": "chaos_knight_reality_rift",
+  "E": "chaos_knight_chaos_strike",
+  "R": "chaos_knight_phantasm",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "chen": {
+  "Q": "chen_penitence",
+  "W": "chen_test_of_faith",
+  "E": "chen_holy_persuasion",
+  "R": "chen_hand_of_god",
+  "source": "d2vpk: hand_of_god is Ability5"
+ },
+ "clinkz": {
+  "Q": "clinkz_strafe",
+  "W": "clinkz_searing_arrows",
+  "E": "clinkz_skeleton_walk",
+  "R": "clinkz_death_pact",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only) | v3.0 corrected E: clinkz_wind_walk -> clinkz_skeleton_walk (worker-flagged, current Dota)"
+ },
+ "crystal_maiden": {
+  "Q": "crystal_maiden_crystal_nova",
+  "W": "crystal_maiden_frostbite",
+  "E": "crystal_maiden_brilliance_aura",
+  "R": "crystal_maiden_freezing_field",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "dark_seer": {
+  "Q": "dark_seer_vacuum",
+  "W": "dark_seer_ion_shell",
+  "E": "dark_seer_surge",
+  "R": "dark_seer_wall_of_replica",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "dazzle": {
+  "Q": "dazzle_poison_touch",
+  "W": "dazzle_shallow_grave",
+  "E": "dazzle_shadow_wave",
+  "R": "dazzle_weave",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "death_prophet": {
+  "Q": "death_prophet_carrion_swarm",
+  "W": "death_prophet_silence",
+  "E": "death_prophet_spirit_siphon",
+  "R": "death_prophet_exorcism",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only) | v3.0 corrected E: death_prophet_witchcraft -> death_prophet_spirit_siphon (worker-flagged, current Dota)"
+ },
+ "disruptor": {
+  "Q": "disruptor_thunder_strike",
+  "W": "disruptor_glimpse",
+  "E": "disruptor_kinetic_field",
+  "R": "disruptor_static_storm",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "dragon_knight": {
+  "Q": "dragon_knight_breathe_fire",
+  "W": "dragon_knight_dragon_tail",
+  "E": "dragon_knight_dragon_blood",
+  "R": "dragon_knight_elder_dragon_form",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "drow_ranger": {
+  "Q": "drow_ranger_frost_arrows",
+  "W": "drow_ranger_wave_of_silence",
+  "E": "drow_ranger_multishot",
+  "R": "drow_ranger_marksmanship",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only) | v3.0 corrected E: drow_ranger_trueshot -> drow_ranger_multishot (worker-flagged, current Dota)"
+ },
+ "earth_spirit": {
+  "Q": "earth_spirit_boulder_smash",
+  "W": "earth_spirit_rolling_boulder",
+  "E": "earth_spirit_geomagnetic_grip",
+  "R": "earth_spirit_magnetize",
+  "source": "d2vpk: magnetize is Ability6"
+ },
+ "earthshaker": {
+  "Q": "earthshaker_fissure",
+  "W": "earthshaker_enchant_totem",
+  "E": "earthshaker_aftershock",
+  "R": "earthshaker_echo_slam",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "elder_titan": {
+  "Q": "elder_titan_echo_stomp",
+  "W": "elder_titan_ancestral_spirit",
+  "E": "elder_titan_natural_order",
+  "R": "elder_titan_earth_splitter",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only) | v3.0 corrected R: elder_titan_return_spirit -> elder_titan_earth_splitter (worker-flagged, current Dota)"
+ },
+ "ember_spirit": {
+  "Q": "ember_spirit_searing_chains",
+  "W": "ember_spirit_sleight_of_fist",
+  "E": "ember_spirit_flame_guard",
+  "R": "ember_spirit_activate_fire_remnant",
+  "source": "d2vpk"
+ },
+ "enchantress": {
+  "Q": "enchantress_enchant",
+  "W": "enchantress_natures_attendants",
+  "E": "enchantress_untouchable",
+  "R": "enchantress_impetus",
+  "source": "d2vpk order corrected: enchant is the castable Q, untouchable is passive"
+ },
+ "enigma": {
+  "Q": "enigma_malefice",
+  "W": "enigma_demonic_conversion",
+  "E": "enigma_midnight_pulse",
+  "R": "enigma_black_hole",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "faceless_void": {
+  "Q": "faceless_void_time_walk",
+  "W": "faceless_void_time_dilation",
+  "E": "faceless_void_time_lock",
+  "R": "faceless_void_chronosphere",
+  "source": "d2vpk + focus_heroes.py (time_dilation replaces innate backtrack)"
+ },
+ "gyrocopter": {
+  "Q": "gyrocopter_rocket_barrage",
+  "W": "gyrocopter_homing_missile",
+  "E": "gyrocopter_flak_cannon",
+  "R": "gyrocopter_call_down",
+  "source": "d2vpk npc_heroes.txt Ability6=call_down"
+ },
+ "huskar": {
+  "Q": "huskar_inner_fire",
+  "W": "huskar_burning_spear",
+  "E": "huskar_berserkers_blood",
+  "R": "huskar_life_break",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only) | v3.0 corrected Q: huskar_inner_vitality -> huskar_inner_fire (worker-flagged, current Dota)"
+ },
+ "invoker": {
+  "Q": "invoker_quas",
+  "W": "invoker_wex",
+  "E": "invoker_exort",
+  "R": "invoker_invoke",
+  "source": "d2vpk + focus_heroes.py; invoked spells: cold_snap/emp/tornado/alacrity/sun_strike/forge_spirit/chaos_meteor/deafening_blast/ice_wall/ghost_walk"
+ },
+ "jakiro": {
+  "Q": "jakiro_dual_breath",
+  "W": "jakiro_ice_path",
+  "E": "jakiro_liquid_fire",
+  "R": "jakiro_macropyre",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "juggernaut": {
+  "Q": "juggernaut_blade_fury",
+  "W": "juggernaut_healing_ward",
+  "E": "juggernaut_blade_dance",
+  "R": "juggernaut_omni_slash",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "keeper_of_the_light": {
+  "Q": "keeper_of_the_light_illuminate",
+  "W": "keeper_of_the_light_mana_leak",
+  "E": "keeper_of_the_light_chakra_magic",
+  "R": "keeper_of_the_light_spirit_form",
+  "source": "d2vpk: spirit_form is Ability6; recall/blinding_light are sub-abilities"
+ },
+ "kunkka": {
+  "Q": "kunkka_torrent",
+  "W": "kunkka_tidebringer",
+  "E": "kunkka_x_marks_the_spot",
+  "R": "kunkka_ghostship",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "legion_commander": {
+  "Q": "legion_commander_overwhelming_odds",
+  "W": "legion_commander_press_the_attack",
+  "E": "legion_commander_moment_of_courage",
+  "R": "legion_commander_duel",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "leshrac": {
+  "Q": "leshrac_split_earth",
+  "W": "leshrac_diabolic_edict",
+  "E": "leshrac_lightning_storm",
+  "R": "leshrac_pulse_nova",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "lich": {
+  "Q": "lich_frost_nova",
+  "W": "lich_frost_armor",
+  "E": "lich_sinister_gaze",
+  "R": "lich_chain_frost",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only) | v3.0 corrected E: lich_dark_ritual -> lich_sinister_gaze (worker-flagged, current Dota)"
+ },
+ "lina": {
+  "Q": "lina_dragon_slave",
+  "W": "lina_light_strike_array",
+  "E": "lina_fiery_soul",
+  "R": "lina_laguna_blade",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "lion": {
+  "Q": "lion_impale",
+  "W": "lion_voodoo",
+  "E": "lion_mana_drain",
+  "R": "lion_finger_of_death",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "lone_druid": {
+  "Q": "lone_druid_spirit_bear",
+  "W": "lone_druid_rabid",
+  "E": "lone_druid_synergy",
+  "R": "lone_druid_true_form",
+  "source": "d2vpk"
+ },
+ "luna": {
+  "Q": "luna_lucent_beam",
+  "W": "luna_moon_glaive",
+  "E": "luna_lunar_blessing",
+  "R": "luna_eclipse",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "lycan": {
+  "Q": "lycan_summon_wolves",
+  "W": "lycan_howl",
+  "E": "lycan_feral_impulse",
+  "R": "lycan_shapeshift",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "medusa": {
+  "Q": "medusa_split_shot",
+  "W": "medusa_mystic_snake",
+  "E": "medusa_mana_shield",
+  "R": "medusa_stone_gaze",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "meepo": {
+  "Q": "meepo_earthbind",
+  "W": "meepo_poof",
+  "E": "meepo_geostrike",
+  "R": "meepo_divided_we_stand",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "mirana": {
+  "Q": "mirana_starfall",
+  "W": "mirana_arrow",
+  "E": "mirana_leap",
+  "R": "mirana_invis",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "morphling": {
+  "Q": "morphling_waveform",
+  "W": "morphling_adaptive_strike",
+  "E": "morphling_morph_agi",
+  "R": "morphling_replicate",
+  "source": "d2vpk"
+ },
+ "naga_siren": {
+  "Q": "naga_siren_mirror_image",
+  "W": "naga_siren_ensnare",
+  "E": "naga_siren_rip_tide",
+  "R": "naga_siren_song_of_the_siren",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "night_stalker": {
+  "Q": "night_stalker_void",
+  "W": "night_stalker_crippling_fear",
+  "E": "night_stalker_hunter_in_the_night",
+  "R": "night_stalker_darkness",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "nyx_assassin": {
+  "Q": "nyx_assassin_impale",
+  "W": "nyx_assassin_mana_burn",
+  "E": "nyx_assassin_spiked_carapace",
+  "R": "nyx_assassin_burrow",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "ogre_magi": {
+  "Q": "ogre_magi_fireblast",
+  "W": "ogre_magi_ignite",
+  "E": "ogre_magi_bloodlust",
+  "R": "ogre_magi_unrefined_fireblast",
+  "source": "d2vpk"
+ },
+ "omniknight": {
+  "Q": "omniknight_purification",
+  "W": "omniknight_heavenly_grace",
+  "E": "omniknight_degen_aura",
+  "R": "omniknight_guardian_angel",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only) | v3.0 corrected W: omniknight_repel -> omniknight_heavenly_grace (worker-flagged, current Dota)"
+ },
+ "oracle": {
+  "Q": "oracle_fortunes_end",
+  "W": "oracle_fates_edict",
+  "E": "oracle_purifying_flames",
+  "R": "oracle_false_promise",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "phantom_assassin": {
+  "Q": "phantom_assassin_stifling_dagger",
+  "W": "phantom_assassin_phantom_strike",
+  "E": "phantom_assassin_blur",
+  "R": "phantom_assassin_coup_de_grace",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "phantom_lancer": {
+  "Q": "phantom_lancer_spirit_lance",
+  "W": "phantom_lancer_doppelwalk",
+  "E": "phantom_lancer_phantom_edge",
+  "R": "phantom_lancer_juxtapose",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "phoenix": {
+  "Q": "phoenix_icarus_dive",
+  "W": "phoenix_fire_spirits",
+  "E": "phoenix_sun_ray",
+  "R": "phoenix_supernova",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only) | v3.0 corrected R: phoenix_sun_ray_toggle_move_empty -> phoenix_supernova (worker-flagged, current Dota)"
+ },
+ "puck": {
+  "Q": "puck_illusory_orb",
+  "W": "puck_waning_rift",
+  "E": "puck_phase_shift",
+  "R": "puck_dream_coil",
+  "source": "d2vpk: dream_coil is Ability5"
+ },
+ "pudge": {
+  "Q": "pudge_meat_hook",
+  "W": "pudge_rot",
+  "E": "pudge_flesh_heap",
+  "R": "pudge_dismember",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "pugna": {
+  "Q": "pugna_nether_blast",
+  "W": "pugna_decrepify",
+  "E": "pugna_nether_ward",
+  "R": "pugna_life_drain",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "razor": {
+  "Q": "razor_plasma_field",
+  "W": "razor_static_link",
+  "E": "razor_unstable_current",
+  "R": "razor_eye_of_the_storm",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "riki": {
+  "Q": "riki_smoke_screen",
+  "W": "riki_tricks_of_the_trade",
+  "E": "riki_backstab",
+  "R": "riki_blink_strike",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only) | v3.0 corrected W: riki_permanent_invisibility -> riki_tricks_of_the_trade (worker-flagged, current Dota)"
+ },
+ "rubick": {
+  "Q": "rubick_telekinesis",
+  "W": "rubick_fade_bolt",
+  "E": "rubick_null_field",
+  "R": "rubick_spell_steal",
+  "source": "d2vpk + canonical: spell steal is rubick_spell_steal"
+ },
+ "sand_king": {
+  "Q": "sandking_burrowstrike",
+  "W": "sandking_sand_storm",
+  "E": "sandking_caustic_finale",
+  "R": "sandking_epicenter",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "shadow_demon": {
+  "Q": "shadow_demon_disruption",
+  "W": "shadow_demon_soul_catcher",
+  "E": "shadow_demon_shadow_poison",
+  "R": "shadow_demon_demonic_purge",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only) | v3.0 corrected R: shadow_demon_shadow_poison_release -> shadow_demon_demonic_purge (worker-flagged, current Dota)"
+ },
+ "shadow_shaman": {
+  "Q": "shadow_shaman_ether_shock",
+  "W": "shadow_shaman_voodoo",
+  "E": "shadow_shaman_shackles",
+  "R": "shadow_shaman_mass_serpent_ward",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "silencer": {
+  "Q": "silencer_curse_of_the_silent",
+  "W": "silencer_glaives_of_wisdom",
+  "E": "silencer_last_word",
+  "R": "silencer_global_silence",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "skywrath_mage": {
+  "Q": "skywrath_mage_arcane_bolt",
+  "W": "skywrath_mage_concussive_shot",
+  "E": "skywrath_mage_ancient_seal",
+  "R": "skywrath_mage_mystic_flare",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "slardar": {
+  "Q": "slardar_sprint",
+  "W": "slardar_slithereen_crush",
+  "E": "slardar_bash",
+  "R": "slardar_amplify_damage",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "slark": {
+  "Q": "slark_dark_pact",
+  "W": "slark_pounce",
+  "E": "slark_essence_shift",
+  "R": "slark_shadow_dance",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "sniper": {
+  "Q": "sniper_shrapnel",
+  "W": "sniper_headshot",
+  "E": "sniper_take_aim",
+  "R": "sniper_assassinate",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "spectre": {
+  "Q": "spectre_spectral_dagger",
+  "W": "spectre_desolate",
+  "E": "spectre_dispersion",
+  "R": "spectre_haunt",
+  "source": "d2vpk: haunt is Ability5, reality is sub-ability"
+ },
+ "spirit_breaker": {
+  "Q": "spirit_breaker_charge_of_darkness",
+  "W": "spirit_breaker_empowering_haste",
+  "E": "spirit_breaker_greater_bash",
+  "R": "spirit_breaker_nether_strike",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "storm_spirit": {
+  "Q": "storm_spirit_static_remnant",
+  "W": "storm_spirit_electric_vortex",
+  "E": "storm_spirit_overload",
+  "R": "storm_spirit_ball_lightning",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "sven": {
+  "Q": "sven_storm_bolt",
+  "W": "sven_great_cleave",
+  "E": "sven_warcry",
+  "R": "sven_gods_strength",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "techies": {
+  "Q": "techies_land_mines",
+  "W": "techies_stasis_trap",
+  "E": "techies_blast_off",
+  "R": "techies_focused_detonate",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only) | v3.0 corrected E: techies_suicide -> techies_blast_off (worker-flagged, current Dota)"
+ },
+ "templar_assassin": {
+  "Q": "templar_assassin_refraction",
+  "W": "templar_assassin_meld",
+  "E": "templar_assassin_psi_blades",
+  "R": "templar_assassin_trap",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "terrorblade": {
+  "Q": "terrorblade_reflection",
+  "W": "terrorblade_conjure_image",
+  "E": "terrorblade_metamorphosis",
+  "R": "terrorblade_sunder",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "tidehunter": {
+  "Q": "tidehunter_gush",
+  "W": "tidehunter_kraken_shell",
+  "E": "tidehunter_anchor_smash",
+  "R": "tidehunter_ravage",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "tinker": {
+  "Q": "tinker_laser",
+  "W": "tinker_heat_seeking_missile",
+  "E": "tinker_defense_matrix",
+  "R": "tinker_rearm",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only) | v3.0 corrected E: tinker_march_of_the_machines -> tinker_defense_matrix (worker-flagged, current Dota)"
+ },
+ "tiny": {
+  "Q": "tiny_avalanche",
+  "W": "tiny_toss",
+  "E": "tiny_craggy_exterior",
+  "R": "tiny_grow",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "troll_warlord": {
+  "Q": "troll_warlord_berserkers_rage",
+  "W": "troll_warlord_whirling_axes_ranged",
+  "E": "troll_warlord_fervor",
+  "R": "troll_warlord_battle_trance",
+  "source": "d2vpk: W is whirling_axes_ranged, E fervor (melee axes is sub-ability)"
+ },
+ "tusk": {
+  "Q": "tusk_ice_shards",
+  "W": "tusk_snowball",
+  "E": "tusk_frozen_sigil",
+  "R": "tusk_walrus_punch",
+  "source": "d2vpk: walrus_punch is Ability6"
+ },
+ "undying": {
+  "Q": "undying_decay",
+  "W": "undying_soul_rip",
+  "E": "undying_tombstone",
+  "R": "undying_flesh_golem",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "ursa": {
+  "Q": "ursa_earthshock",
+  "W": "ursa_overpower",
+  "E": "ursa_fury_swipes",
+  "R": "ursa_enrage",
+  "source": "d2vpk npc_heroes.txt Ability6=enrage"
+ },
+ "venomancer": {
+  "Q": "venomancer_venomous_gale",
+  "W": "venomancer_poison_sting",
+  "E": "venomancer_plague_ward",
+  "R": "venomancer_poison_nova",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "viper": {
+  "Q": "viper_poison_attack",
+  "W": "viper_nethertoxin",
+  "E": "viper_corrosive_skin",
+  "R": "viper_viper_strike",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "visage": {
+  "Q": "visage_grave_chill",
+  "W": "visage_soul_assumption",
+  "E": "visage_gravekeepers_cloak",
+  "R": "visage_summon_familiars",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "warlock": {
+  "Q": "warlock_fatal_bonds",
+  "W": "warlock_shadow_word",
+  "E": "warlock_upheaval",
+  "R": "warlock_rain_of_chaos",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "weaver": {
+  "Q": "weaver_the_swarm",
+  "W": "weaver_shukuchi",
+  "E": "weaver_geminate_attack",
+  "R": "weaver_time_lapse",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "winter_wyvern": {
+  "Q": "winter_wyvern_arctic_burn",
+  "W": "winter_wyvern_splinter_blast",
+  "E": "winter_wyvern_cold_embrace",
+  "R": "winter_wyvern_winters_curse",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "witch_doctor": {
+  "Q": "witch_doctor_paralyzing_cask",
+  "W": "witch_doctor_voodoo_restoration",
+  "E": "witch_doctor_maledict",
+  "R": "witch_doctor_death_ward",
+  "source": "d2vpk npc_heroes.txt (stale snapshot, pre-2023 heroes only)"
+ },
+ "anti_mage": {
+  "Q": "antimage_mana_break",
+  "W": "antimage_blink",
+  "E": "antimage_counterspell",
+  "R": "antimage_mana_void",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "arc_warden": {
+  "Q": "arc_warden_flux",
+  "W": "arc_warden_magnetic_field",
+  "E": "arc_warden_spark_wraith",
+  "R": "arc_warden_tempest_double",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "centaur_warrunner": {
+  "Q": "centaur_hoof_stomp",
+  "W": "centaur_double_edge",
+  "E": "centaur_return",
+  "R": "centaur_stampede",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "clockwerk": {
+  "Q": "rattletrap_battery_assault",
+  "W": "rattletrap_power_cogs",
+  "E": "rattletrap_rocket_flare",
+  "R": "rattletrap_hookshot",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "dark_willow": {
+  "Q": "dark_willow_bramble_maze",
+  "W": "dark_willow_shadow_realm",
+  "E": "dark_willow_cursed_crown",
+  "R": "dark_willow_terrorize",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "dawnbreaker": {
+  "Q": "dawnbreaker_starbreaker",
+  "W": "dawnbreaker_celestial_hammer",
+  "E": "dawnbreaker_luminosity",
+  "R": "dawnbreaker_solar_guardian",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "doom": {
+  "Q": "doom_bringer_devour",
+  "W": "doom_bringer_scorched_earth",
+  "E": "doom_bringer_infernal_blade",
+  "R": "doom_bringer_doom",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "grimstroke": {
+  "Q": "grimstroke_dark_artistry",
+  "W": "grimstroke_ink_creature",
+  "E": "grimstroke_spirit_walk",
+  "R": "grimstroke_soul_chain",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "hoodwink": {
+  "Q": "hoodwink_acorn_shot",
+  "W": "hoodwink_bushwhack",
+  "E": "hoodwink_scurry",
+  "R": "hoodwink_sharpshooter",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "io": {
+  "Q": "wisp_tether",
+  "W": "wisp_spirits",
+  "E": "wisp_overcharge",
+  "R": "wisp_relocate",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "kez": {
+  "Q": "kez_echo_slash",
+  "W": "kez_grappling_claw",
+  "E": "kez_kazurai_katana",
+  "R": "kez_raptor_dance",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "lifestealer": {
+  "Q": "life_stealer_rage",
+  "W": "life_stealer_feast",
+  "E": "life_stealer_open_wounds",
+  "R": "life_stealer_infest",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "magnus": {
+  "Q": "magnus_shockwave",
+  "W": "magnus_empower",
+  "E": "magnus_skewer",
+  "R": "magnus_reverse_polarity",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "marci": {
+  "Q": "marci_dispose",
+  "W": "marci_rebound",
+  "E": "marci_sidekick",
+  "R": "marci_unleash",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file | v3.0 corrected Q: marci_grapple -> marci_dispose (worker-flagged, current Dota)"
+ },
+ "mars": {
+  "Q": "mars_spear_of_mars",
+  "W": "mars_gods_rebuke",
+  "E": "mars_bulwark",
+  "R": "mars_arena_of_blood",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "monkey_king": {
+  "Q": "monkey_king_boundless_strike",
+  "W": "monkey_king_tree_dance",
+  "E": "monkey_king_primal_spring",
+  "R": "monkey_king_wukongs_command",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "muerta": {
+  "Q": "muerta_dead_shot",
+  "W": "muerta_the_calling",
+  "E": "muerta_gunslinger",
+  "R": "muerta_pierce_the_veil",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "natures_prophet": {
+  "Q": "furion_sprout",
+  "W": "furion_teleportation",
+  "E": "furion_force_of_nature",
+  "R": "furion_wrath_of_nature",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "necrophos": {
+  "Q": "necrolyte_death_pulse",
+  "W": "necrolyte_ghost_shroud",
+  "E": "necrolyte_heartstopper_aura",
+  "R": "necrolyte_reapers_scythe",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "outworld_destroyer": {
+  "Q": "obsidian_destroyer_arcane_orb",
+  "W": "obsidian_destroyer_astral_imprisonment",
+  "E": "obsidian_destroyer_essence_aura",
+  "R": "obsidian_destroyer_sanity_eclipse",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "pangolier": {
+  "Q": "pangolier_swashbuckle",
+  "W": "pangolier_shield_crash",
+  "E": "pangolier_heartpiercer",
+  "R": "pangolier_rolling_thunder",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "primal_beast": {
+  "Q": "primal_beast_onslaught",
+  "W": "primal_beast_trample",
+  "E": "primal_beast_uproar",
+  "R": "primal_beast_pulverize",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file | v3.0 corrected Q: primal_beast_trample -> primal_beast_onslaught (worker-flagged, current Dota) | v3.0 corrected W: primal_beast_uproar -> primal_beast_trample (worker-flagged, current Dota) | v3.0 corrected E: primal_beast_onslaught -> primal_beast_uproar (worker-flagged, current Dota)"
+ },
+ "queen_of_pain": {
+  "Q": "queenofpain_shadow_strike",
+  "W": "queenofpain_blink",
+  "E": "queenofpain_scream_of_pain",
+  "R": "queenofpain_sonic_wave",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "ringmaster": {
+  "Q": "ringmaster_tame_the_beasts",
+  "W": "ringmaster_the_box",
+  "E": "ringmaster_escape_act",
+  "R": "ringmaster_wheel_of_wonder",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "shadow_fiend": {
+  "Q": "nevermore_shadowraze1",
+  "W": "nevermore_necromastery",
+  "E": "nevermore_presence_of_the_dark_lord",
+  "R": "nevermore_requiem",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "snapfire": {
+  "Q": "snapfire_scatterblast",
+  "W": "snapfire_firesnap_cookie",
+  "E": "snapfire_lil_shredder",
+  "R": "snapfire_mortimer_kisses",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "timbersaw": {
+  "Q": "shredder_whirling_death",
+  "W": "shredder_timber_chain",
+  "E": "shredder_reactive_armor",
+  "R": "shredder_chakram",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "treant_protector": {
+  "Q": "treant_natures_grasp",
+  "W": "treant_leech_seed",
+  "E": "treant_living_armor",
+  "R": "treant_overgrowth",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "underlord": {
+  "Q": "abyssal_underlord_firestorm",
+  "W": "abyssal_underlord_pit_of_malice",
+  "E": "abyssal_underlord_atrophy_aura",
+  "R": "abyssal_underlord_dark_rift",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "vengeful_spirit": {
+  "Q": "vengefulspirit_magic_missile",
+  "W": "vengefulspirit_wave_of_terror",
+  "E": "vengefulspirit_vengeance_aura",
+  "R": "vengefulspirit_nether_swap",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "void_spirit": {
+  "Q": "void_spirit_aether_remnant",
+  "W": "void_spirit_dissimilate",
+  "E": "void_spirit_resonant_pulse",
+  "R": "void_spirit_astral_step",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "windranger": {
+  "Q": "windrunner_shackleshot",
+  "W": "windrunner_powershot",
+  "E": "windrunner_windrun",
+  "R": "windrunner_focusfire",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "wraith_king": {
+  "Q": "skeleton_king_hellfire_blast",
+  "W": "skeleton_king_vampiric_aura",
+  "E": "skeleton_king_mortal_strike",
+  "R": "skeleton_king_reincarnation",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "zeus": {
+  "Q": "zeus_arc_lightning",
+  "W": "zeus_lightning_bolt",
+  "E": "zeus_static_field",
+  "R": "zeus_thundergods_wrath",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ },
+ "largo": {
+  "Q": "largo_catchy_lick",
+  "W": "largo_frogstomp",
+  "E": "largo_croak_of_genius",
+  "R": "largo_amphibian_rhapsody",
+  "source": "manual: canonical Valve naming (hero prefix + display name); display names verified via Liquipedia/Dotabuff for Largo/Kez, others well-known; NOT in stale d2vpk file"
+ }
+}

@@ -120,7 +120,14 @@ function Skill.Cast(bot, ability, target, castType)
     return ok == true
   elseif castType == "location" then
     if target == nil then return false end
-    local loc = safeCall(function() return target:GetLocation() end)
+    -- target 可能是单位 (取 GetLocation), 也可能是原始位置表 {x=,y=,z=}
+    -- (如 Techies 在脚下布雷、Tinker 无敌时在原地读条, Consider 传 snap.location)。
+    local loc = nil
+    if type(target) == "table" and target.x ~= nil and target.y ~= nil then
+      loc = target
+    else
+      loc = safeCall(function() return target:GetLocation() end)
+    end
     if loc == nil then return false end
     local ok = pcall(function() bot:Action_UseAbilityOnLocation(ability, loc) end)
     return ok == true

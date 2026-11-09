@@ -1,4 +1,4 @@
--- ability_item_usage_keeper_of_the_light.lua -- Keeper of the Light 光之守卫 -- v2.0.0: 技能走 BotLib SkillsComplement(),
+-- ability_item_usage_keeper_of_the_light.lua -- Keeper of the Light 光之守卫 -- v3.0.0: 技能走 BotLib SkillsComplement(),
 -- 加点走 BotLib 的 SKILL_BUILD, 天赋级走 TALENTS。通用入口见 ability_item_usage_generic.lua。
 local Skill = require(GetScriptDirectory() .. "/engine/skill")
 local Heroes = require(GetScriptDirectory() .. "/data/heroes")

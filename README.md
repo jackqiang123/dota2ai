@@ -2,7 +2,9 @@
 
 一整套、可安装、可跑的 Dota 2 Workshop Bot AI。**不是 124 份手写脚本**，而是 Valve 原生 Team / Mode / Action 三层结构 + 一张英雄数据表 + 生成器。
 
-> 版本：**v2.0.0**（2026-11-09）| 版本基准：**7.41f，127 名英雄**。
+> 版本：**v3.0.0**（2026-11-09）| 版本基准：**7.41f，127 名英雄**。
+>
+> **v3.0.0 更新日志：**127 个英雄全部写满真实 Consider 逻辑，不再是 10 个焦点 + 117 个通用 fallback——(1) 新增 `tools/all_heroes.py`（全量第二事实源：10 个 v2.0 焦点 + 117 个新写，`tools/all_heroes_a.py`..`f.py` 六组），生成器改用全量数据，BotLib 共 15,386 行（v2.0 约 4,006 行）；每个英雄至少 2 个非被动 Consider（54 个 4 个、62 个 3 个、9 个 2 个；Wraith King 当前版本只有 Q 一个主动技能，是唯一 1 个的例外；Invoker 另有 8 个 invoked 技能 Consider）；(2) 天赋：127 个英雄各自的天赋选择，`GENERIC_TALENTS` 按主属性通用表已删除；(3) 出装：`sBuyList` 五个位置互不相同，主位置 ≥12 件、每位置 ≥8 件，另加分位置 `sSellListByPos`（购买状态机目前只读 `sBuyList`，卖出表为数据预留）；(4) 技能名：`tools/skill_names_reference.json`（d2vpk `npc_heroes.txt` / `npc_abilities.txt` 为底，2023 年前快照）经 6 组人工标记后在整合时订正 15 处过时名（兽王 R 原始咆哮、上古巨神 R 大地分裂、凤凰 R 超新星、力丸 W 诡计之雾、巫妖 E 邪恶凝视、玛西 Q 摔跤行者、修补匠 E 防御矩阵、工程师 E 自爆炸弹、克林克兹 E 骷髅漫步、全能骑士 W 天堂恩赐、死亡先知 E 灵魂吸取、卓尔 E 多重射击、暗影恶魔 R 恶魔净化、原始野兽 Q/W/E 槽位顺序、戴泽 R 编织；哈斯卡 Q 以焦点文件为准为 Inner Fire）；Largo、Kez 的内部名仍为按 Valve 命名规则推断、未在新版 d2vpk 中核对（见各英雄 limitations）；(5) 引擎小修：`Skill.Cast` 的 location 分支接受原始位置表 `{x,y,z}`（Techies 脚下布雷等传 `snap.location` 的分支此前会静默失败）；(6) 新增 `tools/verify_v300.lua`（147 项：127 个英雄逐个在 7 个构造场景里验证至少一个 Consider desire > 0.5 且 SkillsComplement 真正施放 + 技能名一致 + 五位置出装 + 天赋 127 条 + Mode/互动回归）；`validate.py` 新增 v3.0 检查（BotLib 全有 Consider 且 ≥2 非被动、五位置不全同、天赋 127 条且无通用表残留、技能名在核对表里、BotLib 内无 `TryCastByType` 调用）。fallback 只保留作兜底：`SkillsComplement` 全返回 0 时 `ability_item_usage` wrapper 才走 `Micro.TryCastByType`，触发率目标为 0。v2.0.0 的架构与修复全部保留，见下文。
 >
 > **v2.0.0 更新日志：**架构换成 OHA 的方法（Valve 原生 Mode 系统）——(1) `bot_generic.lua` 只做入口，决策交给 `mode_dispatcher.lua` + 15 个 `mode_*_generic.lua`（每帧全部 GetDesire 打分，最高分模式的 Think 才跑）；(2) 新增 `team_think.lua` / `Team.TeamThink()`，每帧先定全队战略写进黑板；(3) 新增 `ability_item_usage_generic.lua` / `item_purchase_generic.lua`，技能走 BotLib `SkillsComplement()`，出装走按位置买装的状态机；(4) 新增 `BotLib/hero_<name>.lua`（127 个）：10 个焦点英雄写满真实 Consider 逻辑，117 个走通用 fallback；天赋表新增 `data/talents.lua`（焦点英雄自选，其余按主属性通用）；(5) 全仓库 require 改为 `require(GetScriptDirectory() .. "/...")` 的 Valve 写法；(6) Lua 5.1 兼容检查进 `validate.py`；旧 `smoke_test.lua`（硬编码 /home/hatch 路径）已删，由 `verify_v200.lua`（71 项）取代。v1.1.0 的修复与英雄互动全部保留，见下文。任务原文写“约 124 名”时还是 7.38 口径；经核实（Valve 官方英雄页 / datafeed，2026-11-09），2025-12-16 的 7.40 加入 **朗戈 Largo** 后总数为 **127**，此处按 127 名交付，一个不少。中文名以 dota2.com.cn 为准（已核实：Snapfire = 电炎绝手、Arc Warden = 天穹守望者、Outworld Destroyer = 殁境神蚀者、Pangolier = 石鳞剑士、Muerta = 琼英碧灵、Ringmaster = 百戏大王、Largo = 朗戈）。
 
@@ -15,7 +17,8 @@
 | Lua 文件总数 | 539（381 per-hero + 127 BotLib + 15 Mode + 通用入口 + 7 引擎 + 数据表） |
 | 引擎文件 | 7（perception / utility / micro / macro / team / core 垫片 / skill） |
 | Mode 文件 | 15（laning / farm / push + 三分路包装 / retreat / attack / roam / team_roam / roshan / ward / defend_tower / rune / secret_shop） |
-| BotLib 英雄文件 | 127（10 个焦点深度版 + 117 个通用版） |
+| BotLib 英雄文件 | 127（全部真实 Consider；共 15,386 行，v2.0 约 4,006 行） |
+| Lua 代码总行数 | 25,595 |
 | 出装涉及的不同物品 | 64（均为真实物品名） |
 | 校验 | `luac -p` 全过，0 错误 0 警告；见下文 |
 
@@ -49,7 +52,7 @@ scripts/vscripts/bots/
   hero_selection.lua         # 选人: 按阵容补位 + 经典组合协同加分 (见 data/combos.lua)
   BotLib/hero_<name>.lua     # 每英雄 1 个文件: 天赋表 / 加点表 / 分位置出装表 / 技能名表 / SkillsComplement() + ConsiderX()
   data/heroes.lua            # 全英雄数据表 (生成器产物, 不要手改)
-  data/talents.lua           # v2.0.0 新增: 天赋表 (焦点英雄自选, 其余按主属性通用)
+  data/talents.lua           # v2.0.0 新增, v3.0.0 全量: 天赋表 (127 个英雄各自选择, 通用表已删)
   data/combos.lua            # 14 组经典组合 + 先手大招表 + 救人英雄表
   engine/
     perception.lua  # 感知: 每 0.25s 快照 + 缓存, 只读己方视野
@@ -61,11 +64,15 @@ scripts/vscripts/bots/
     core.lua        # v2.0.0 兼容垫片: Core.Think() 转给 ModeDispatcher.Think(), 不再写决策逻辑
 tools/
   heroes_data.py  # 单一事实来源: 127 名英雄 (中英文名/定位/分路/技能类型/加点优先级/招牌装)
-  focus_heroes.py # v2.0.0 新增: 10 个焦点英雄的深度数据 (真实技能名 / Consider 条件 / 天赋自选 / 分位置出装)
-  generate.py     # 生成器: 读 heroes_data.py + focus_heroes.py, 产出 heroes.lua + talents.lua + 381 个 per-hero 文件 + 127 个 BotLib 文件
-  validate.py     # 校验: luac + 文件齐全 + 计数 + 无占位符 + 主属性 + Invoker 上限 + 无 goldMul/xpMul + combos>=12 + Mode>=12 + BotLib/Consider + GetScriptDirectory 一致 + Lua 5.1 检查 + TeamThink + talents 计数
+  focus_heroes.py # v2.0.0 的 10 个焦点英雄深度数据 (v3.0.0 仍为事实源之一, 见 all_heroes.py)
+  all_heroes.py   # v3.0.0 新增: 全量 127 英雄数据 (focus_heroes.py 的 10 个 + all_heroes_a.py..f.py 的 117 个)
+  all_heroes_a.py..f.py # v3.0.0 新增: 其余 117 个英雄的 Consider / 天赋 / 分位置出装 (每文件 17-20 个英雄)
+  skill_names_reference.json # v3.0.0 新增: 127 个英雄 Q/W/E/R 真实内部名核对表 (d2vpk 为底, 15 处已订正)
+  generate.py     # 生成器: 读 heroes_data.py + all_heroes.py, 产出 heroes.lua + talents.lua + 381 个 per-hero 文件 + 127 个 BotLib 文件
+  validate.py     # 校验: luac + 文件齐全 + 计数 + 无占位符 + 主属性 + Invoker 上限 + 无 goldMul/xpMul + combos>=12 + Mode>=12 + BotLib/Consider + GetScriptDirectory 一致 + Lua 5.1 检查 + TeamThink + talents 计数 + v3.0.0 新增 (全量 Consider / 五位置出装 / 天赋无通用表残留 / 技能名核对 / BotLib 无 fallback 调用)
   verify_v110.lua # v1.1.0 验证测试: 40 项 (已适配 v2.0.0 的 GetScriptDirectory stub 与 Mode 化插眼)
   verify_v200.lua # v2.0.0 验证测试: 71 项, 覆盖 Mode/TeamThink/焦点英雄 Consider/combo/GetScriptDirectory/Lua 5.1/天赋/出装
+  verify_v300.lua # v3.0.0 验证测试: 147 项, 127 个英雄逐个在 7 个构造场景里验证 Consider desire>0.5 且真正施放 + 技能名一致 + 五位置出装 + 天赋 127 条 + Mode/互动回归
 ```
 
 **方法来源与致谢 (v2.0.0):** 架构方法来自 Valve 官方 Bot API 文档的三层结构 (Team / Mode / Action) 与 Open Hyper AI (OHA, forest0xia, MIT 协议) 的 `docs/ARCHITECTURE.md` 描述的目录结构与文件分工 (BotLib 英雄文件分段: 天赋 / 加点 / 分位置出装 / SkillsComplement / Consider)。**本项目所有代码均为原创实现, 未复制 OHA 或其上游 adamqqq (GPLv3) 的任何代码文件, 未拷贝其具体数值、注释与变量名。** OHA 本身基于 Valve 默认 Bot 与多位作者的工作, 本项目在此致谢 Valve 与 OHA 的方法贡献。
@@ -78,7 +85,7 @@ tools/
 3. **出装是数据。** `items = { early / mid / late / situational }`，按位置给模板 + 每英雄 3 件招牌装；`Micro.TryBuyNextItem` 按顺序逐件买，第一件没钱就不跳过去买后面的。
 4. **不作弊。** 感知只用己方视野内的 `GetNearbyHeroes / GetNearbyCreeps / GetNearbyTowers`，没有全图视野，没有读敌方不可见信息。v1.1.0 诚实说明：Lua Bot 脚本没有给 Bot 发金钱/经验的 API，v1.0 的“疯狂档 1.25 倍金钱经验”是纸面数字，已删除；真正的引擎级 Unfair 由房间难度控制，本项目 Unfair 只靠反应延迟和决策阈值区分。
 5. **英雄互动（v1.1.0 新增，v2.0.0 保留并搬进 Mode）。** 见下文“英雄互动”一节：连招窗口、集火、救人优先、选人协同；attack / team_roam 模式读连招窗口，attack 模式打 FocusTarget，技能入口先跑救人。
-6. **焦点英雄深度（v2.0.0 新增）。** 10 个焦点英雄（axe / zeus / lion / crystal_maiden / magnus / faceless_void / enigma / dazzle / oracle / huskar）是真实 Consider 逻辑，其余 117 个是通用类型驱动 fallback——这正是 dragonghy fork 的策略：先把少数英雄做深，再扩覆盖。
+6. **全部英雄深度（v3.0.0）。** 127 个英雄全部有真实 Consider 逻辑，不再有通用 fallback 英雄（54 个 4 个非被动 Consider、62 个 3 个、9 个 2 个；Wraith King 只有 Q 一个主动技能；Invoker 另有 8 个 invoked 技能 Consider）。`SkillsComplement` 全返回 0 时 `ability_item_usage` wrapper 才走 `Micro.TryCastByType` 兜底，触发率目标为 0。诚实分级：深度写（4 个 Consider，含跳刀/蓝量/距离等英雄独有条件，如 Pudge 钩、Mirana 箭、Earthshaker 回响、Tinker 刷新、Storm 跳刀距离、Anti-Mage 斩杀线）54 个；标准写（3 个）62 个；简化写（2 个，多为主动技能少的 carry / 被动多的英雄，如 Bristleback、Luna、Meepo、Phantom Assassin、Phantom Lancer、Shadow Fiend、Sniper、Spectre、Spirit Breaker）9 个。
 7. **Lua 5.1 兼容。** Dota 的 Lua VM 是 5.1，不是 5.4；全仓库禁用 goto / table.unpack / // / 位运算，`validate.py` 有专门检查。`require` 全用 `require(GetScriptDirectory() .. "/...")` 的 Valve 写法，测试里用同名 stub。
 
 ## 安装
@@ -110,13 +117,16 @@ tools/
 
 没有任何一档有金钱/经验加成：Lua Bot 脚本没有发金钱/经验的 API，v1.0 表里的金钱经验系数是纸面数字，v1.1.0 已删除。难度只靠反应延迟、补刀容错、撤退阈值、激进程度区分；想要引擎级数值加成的 Unfair，请用房间难度设置。
 
-## 校验结果（本机实测，2026-11-09，v2.0.0）
+## 校验结果（本机实测，2026-11-09，v3.0.0）
 
 ```bash
-python3 tools/generate.py   # heroes: 127 / per-hero files: 381 + BotLib 127 / focus: 10
+python3 tools/generate.py   # heroes: 127 / per-hero files: 381 + BotLib 127 / deep heroes (real Consider): 127 / 127
 python3 tools/validate.py   # lua files: 539, validator: /usr/bin/luac, errors: 0, warnings: 0 -> VALIDATION PASSED
 lua5.4 tools/verify_v110.lua  # VERIFY_V110 PASSED: 40 checks (已适配 v2.0.0)
 lua5.4 tools/verify_v200.lua  # VERIFY_V200 PASSED: 71 checks
+lua5.4 tools/verify_v300.lua  # VERIFY_V300 PASSED: 147 checks
+python3 tools/generate.py && python3 tools/generate.py  # 两次重跑 diff 为 0
+find scripts -name "*.lua" -exec luac -p {} +  # 539 个文件 0 错误
 ```
 
 `verify_v110.lua` 是 v1.1.0 新增的独立验证（不是原来那个返回 nil 技能的弱 smoke）：技能 mock 带 `IsNull()=false` 等真实方法，覆盖 channel 单体/范围、summon、aura/passive 跳过、escape、thinkDelay 节流（简单 0.5s / 困难 0.15s）、打盾分、插眼、15 级不查 -1 槽位、Invoker 上限、主属性计数、朗戈定位、连招窗口、集火、救人、选人协同、防重叠、信使。
@@ -177,7 +187,7 @@ lua5.4 tools/verify_v200.lua  # VERIFY_V200 PASSED: 71 checks
 | Kunkka | 昆卡 | str | 2, 3 | mid | aoe_damage, buff, passive, aoe_damage | item_armlet, item_black_king_bar, item_daedalus |
 | Legion Commander | 军团指挥官 | str | 3, 1 | offlane | buff, heal, passive, point_control | item_blink, item_blade_mail, item_black_king_bar |
 | Leshrac | 拉席克 | int | 2, 3 | mid | aoe_damage, aoe_damage, buff, aoe_damage | item_bloodstone, item_black_king_bar, item_shivas_guard |
-| Lich | 巫妖 | int | 5 | support | nuke, debuff, aura, aoe_damage | item_aether_lens, item_glimmer_cape, item_aghanims_scepter |
+| Lich | 巫妖 | int | 5 | support | nuke, buff, point_control, aoe_damage | item_aether_lens, item_glimmer_cape, item_aghanims_scepter |
 | Lifestealer | 噬魂鬼 | str | 1 | safelane | debuff, buff, passive, buff | item_armlet, item_desolator, item_black_king_bar |
 | Lina | 莉娜 | int | 2, 5 | mid | aoe_control, buff, passive, nuke | item_euls_scepter_of_divinity, item_black_king_bar, item_bloodthorn |
 | Lion | 莱恩 | int | 5 | support | point_control, debuff, nuke, execute | item_blink, item_aether_lens, item_aghanims_scepter |
@@ -185,7 +195,7 @@ lua5.4 tools/verify_v200.lua  # VERIFY_V200 PASSED: 71 checks
 | Luna | 露娜 | agi | 1 | safelane | aoe_damage, buff, aura, aoe_damage | item_manta, item_black_king_bar, item_satanic |
 | Lycan | 狼人 | str | 1, 3 | safelane | summon, buff, aura, buff | item_helm_of_the_dominator, item_black_king_bar, item_assault |
 | Magnus | 马格纳斯 | universal | 3, 2 | offlane | aoe_damage, buff, aura, aoe_control | item_blink, item_black_king_bar, item_refresher_orb |
-| Marci | 玛西 | universal | 3, 4 | offlane | blink, buff, passive, aoe_damage | item_blink, item_black_king_bar, item_assault |
+| Marci | 玛西 | universal | 3, 4 | offlane | point_control, blink, buff, buff | item_blink, item_black_king_bar, item_assault |
 | Mars | 玛尔斯 | str | 3 | offlane | aoe_damage, buff, passive, aoe_control | item_blink, item_black_king_bar, item_desolator |
 | Medusa | 美杜莎 | agi | 1 | safelane | aoe_damage, buff, passive, point_control | item_manta, item_butterfly, item_satanic |
 | Meepo | 米波 | agi | 2, 1 | mid | aoe_damage, blink, passive, summon | item_blink, item_black_king_bar, item_skadi |
@@ -205,18 +215,18 @@ lua5.4 tools/verify_v200.lua  # VERIFY_V200 PASSED: 71 checks
 | Pangolier | 石鳞剑士 | universal | 3, 2 | offlane | aoe_damage, buff, passive, aoe_control | item_diffusal_blade, item_black_king_bar, item_aghanims_scepter |
 | Phantom Assassin | 幻影刺客 | agi | 1 | safelane | blink, passive, debuff, passive | item_battle_fury, item_desolator, item_black_king_bar |
 | Phantom Lancer | 幻影长矛手 | agi | 1 | safelane | nuke, buff, passive, summon | item_diffusal_blade, item_manta, item_heart |
-| Phoenix | 凤凰 | str | 5, 4 | support | aoe_damage, heal, debuff, aoe_damage | item_shivas_guard, item_black_king_bar, item_radiance |
-| Primal Beast | 獸 | str | 3, 2 | offlane | aoe_damage, debuff, passive, aoe_control | item_blink, item_black_king_bar, item_heart |
+| Phoenix | 凤凰 | str | 5, 4 | support | aoe_damage, aoe_damage, heal, aoe_damage | item_shivas_guard, item_black_king_bar, item_radiance |
+| Primal Beast | 兽 | str | 3, 2 | offlane | blink, aoe_damage, buff, point_control | item_blink, item_black_king_bar, item_heart |
 | Puck | 帕克 | int | 2 | mid | aoe_damage, blink, debuff, aoe_control | item_blink, item_black_king_bar, item_aghanims_scepter |
 | Pudge | 帕吉 | str | 4, 3 | roam | point_control, aoe_damage, passive, channel | item_blink, item_black_king_bar, item_aghanims_scepter |
 | Pugna | 帕格纳 | int | 2, 5 | mid | nuke, debuff, aura, channel | item_aether_lens, item_black_king_bar, item_dagon |
-| Queen of Pain | 痛苦女王 | int | 2 | mid | aoe_damage, blink, passive, aoe_damage | item_orchid, item_black_king_bar, item_bloodthorn |
+| Queen of Pain | 痛苦女王 | int | 2 | mid | aoe_damage, blink, aoe_damage, aoe_damage | item_orchid, item_black_king_bar, item_bloodthorn |
 | Razor | 剃刀 | agi | 2, 1 | mid | debuff, buff, passive, aoe_damage | item_bloodstone, item_black_king_bar, item_refresher_orb |
-| Riki | 力丸 | agi | 1, 4 | safelane | aoe_damage, blink, passive, aoe_control | item_diffusal_blade, item_black_king_bar, item_abyssal_blade |
+| Riki | 力丸 | agi | 1, 4 | safelane | aoe_damage, aoe_damage, passive, blink | item_diffusal_blade, item_black_king_bar, item_abyssal_blade |
 | Ringmaster | 百戏大王 | int | 4, 5 | support | aoe_damage, buff, debuff, aoe_control | item_aether_lens, item_glimmer_cape, item_black_king_bar |
 | Rubick | 拉比克 | int | 5, 4 | support | nuke, buff, passive, aoe_control | item_blink, item_aether_lens, item_aghanims_scepter |
 | Sand King | 沙王 | universal | 3 | offlane | aoe_damage, buff, passive, aoe_damage | item_blink, item_black_king_bar, item_aghanims_scepter |
-| Shadow Demon | 暗影恶魔 | int | 5 | support | point_control, debuff, buff, aoe_damage | item_aether_lens, item_glimmer_cape, item_aghanims_scepter |
+| Shadow Demon | 暗影恶魔 | int | 5 | support | point_control, debuff, buff, point_control | item_aether_lens, item_glimmer_cape, item_aghanims_scepter |
 | Shadow Fiend | 影魔 | agi | 2 | mid | aoe_damage, passive, debuff, aoe_damage | item_black_king_bar, item_daedalus, item_satanic |
 | Shadow Shaman | 暗影萨满 | int | 5 | support | point_control, aoe_damage, debuff, summon | item_blink, item_aether_lens, item_aghanims_scepter |
 | Silencer | 沉默术士 | int | 5, 2 | support | debuff, buff, passive, aoe_control | item_force_staff, item_glimmer_cape, item_black_king_bar |
@@ -229,12 +239,12 @@ lua5.4 tools/verify_v200.lua  # VERIFY_V200 PASSED: 71 checks
 | Spirit Breaker | 裂魂人 | str | 4, 3 | roam | blink, buff, passive, point_control | item_shadow_blade, item_black_king_bar, item_assault |
 | Storm Spirit | 风暴之灵 | int | 2 | mid | aoe_damage, buff, passive, blink | item_bloodstone, item_black_king_bar, item_orchid |
 | Sven | 斯温 | str | 1, 3 | safelane | aoe_control, buff, passive, buff | item_echo_sabre, item_black_king_bar, item_daedalus |
-| Techies | 工程师 | universal | 4, 5 | support | aoe_damage, debuff, passive, aoe_damage | item_aether_lens, item_force_staff, item_aghanims_scepter |
+| Techies | 工程师 | universal | 4, 5 | support | aoe_damage, debuff, aoe_damage, aoe_damage | item_aether_lens, item_force_staff, item_aghanims_scepter |
 | Templar Assassin | 圣堂刺客 | agi | 2 | mid | debuff, buff, passive, aoe_damage | item_desolator, item_black_king_bar, item_daedalus |
 | Terrorblade | 恐怖利刃 | agi | 1 | safelane | summon, buff, passive, debuff | item_manta, item_satanic, item_butterfly |
 | Tidehunter | 潮汐猎人 | str | 3 | offlane | aoe_damage, buff, passive, aoe_control | item_blink, item_black_king_bar, item_refresher_orb |
 | Timbersaw | 伐木机 | str | 3 | offlane | aoe_damage, blink, passive, aoe_damage | item_bloodstone, item_black_king_bar, item_shivas_guard |
-| Tinker | 修补匠 | int | 2 | mid | aoe_damage, blink, passive, buff | item_blink, item_black_king_bar, item_aghanims_scepter |
+| Tinker | 修补匠 | int | 2 | mid | nuke, nuke, buff, buff | item_blink, item_black_king_bar, item_aghanims_scepter |
 | Tiny | 小小 | str | 2, 3 | mid | aoe_damage, buff, passive, aoe_control | item_blink, item_black_king_bar, item_aghanims_scepter |
 | Treant Protector | 树精卫士 | str | 5 | support | debuff, heal, buff, aoe_control | item_meteor_hammer, item_pipe_of_insight, item_lotus_orb |
 | Troll Warlord | 巨魔战将 | agi | 1 | safelane | debuff, buff, passive, buff | item_battle_fury, item_black_king_bar, item_satanic |
@@ -271,24 +281,26 @@ lua5.4 tools/verify_v200.lua  # VERIFY_V200 PASSED: 71 checks
 
 1. **未做真机对局测试。** 本机无 Dota 2 客户端，只能做 `luac` 语法校验 + mock 冒烟测试。第一次进游戏前，务必先开一局 1v1 / 5v5 本地房间，确认 Bot 不卡在泉水、不无限回塔、不买错装备。
 2. **出装与加点是“合理模板 + 招牌装”，不是逐版本的最优解。** 7.41f 的数值细节（例如某件装备改价、某技能重做）需要按补丁更新 `tools/heroes_data.py` 后重跑生成器。
-3. **多单位微操弱。** Meepo、陈、德鲁伊、育母蜘蛛等召唤/多单位英雄目前用通用召唤逻辑控制（v1.1.0 已能放出召唤技能），没有独立的分身微操。
+3. **多单位微操弱。** Meepo、Chen、Lone Druid、Beastmaster、Enchantress、Visage 等召唤/分身英雄目前用通用召唤逻辑 + 主身控制（v3.0.0 的 Consider 会放出召唤技能，但召唤物/分身没有独立微操）；Morphling 的属性变换未建模、复制体无独立控制且不能用复制技能；Rubick 只有偷到技能后的使用逻辑框架，Bot API 没有通用的“施放偷来的任意技能”调用，偷技能本身的时机判断也是启发式的。
 4. **视野 / 烟雾 / 假眼博弈弱。** v1.1.0 已实现基础插眼（辅助背包有眼时按河道/己方野区/敌方野区轮换插眼）和信使送货，但买雾时机、反眼、精确眼位悬崖仍是基础规则，没有读敌方动向的博弈层。
 5. **肉山坑坐标是固定值。** `engine/macro.lua` 用的坑位坐标按 7.38+ 常规坑位写死，不同版本若移坑需改一处常量。
 6. **没有机器学习。** 这是规则 + 效用打分系统，不是 OpenAI Five 式强化学习；“AI”指 Bot AI，不指神经网络。
-7. **v2.0.0 仍没有 OHA 的这些：** 中立物品系统、多游戏模式（Turbo / AR / 队长模式等，本项目只按 AP 思路写）、Bot 聊天 / 游戏内指令（`!pick / !ban / !pos`）、小兵 / 召唤物独立微操、Rubick 偷技能等特殊英雄逻辑。Mode 文件是本项目自己写的 15 个，OHA 有 21 个 Mode 文件 + 8,429 行的通用技能入口 + 32k 行的 FretBots——深度仍有差距，见正文对比。
-8. **天赋是自选，不是官方推荐。** 10 个焦点英雄的天赋左右选择是本项目自选的可玩方案，其余按主属性通用表；不是逐版本的最优天赋。
+7. **v3.0.0 仍没有 OHA 的这些：** 中立物品系统、多游戏模式（Turbo / AR / 队长模式等，本项目只按 AP 思路写）、Bot 聊天 / 游戏内指令（`!pick / !ban / !pos`）、小兵 / 召唤物独立微操、Rubick 偷技能完整逻辑。Mode 文件是本项目自己写的 15 个，OHA 有 21 个 Mode 文件 + 8,429 行的通用技能入口 + 32k 行的 FretBots；BotLib 总量本项目约 15k 行，OHA 仅 BotLib 就约 101k 行（Invoker 一个英雄 1,937 行，本项目约 75 行）——深度仍有差距，见正文对比。v3.0.0 追平的是覆盖面（127 个英雄都有 Consider），不是单英雄深度。
+8. **天赋是自选，不是官方推荐。** 127 个英雄的天赋左右选择是本项目自选的可玩方案（v3.0.0 已删除按主属性的通用表）；不是逐版本的最优天赋。
+9. **技能名核对的边界。** 技能名以 d2vpk 2023 年前快照 + Liquipedia/Dotabuff 显示名为底，15 处过时名已在 v3.0.0 订正并有来源标注；但 Largo、Kez 的内部名是按 Valve 命名规则推断的（未在新版 d2vpk 中核对），Kez 只建模了 Kazurai Katana 姿态、Shodo Sai 姿态未建模，Largo 的节奏玩法未建模；个别子技能（如 Ember Spirit 的余烬放置、Phoenix 的 Sun Ray 子技能、Shadow Fiend 的中/远影压分槽）因 Bot API 无对应字段而未建模，见各英雄 limitations。
 
 ## 更新流程（随版本更新）
 
 ```bash
-# 1. 改数据（只改这里；焦点英雄改 tools/focus_heroes.py）
+# 1. 改数据（只改这里；英雄 Consider/天赋/出装改 tools/all_heroes_*.py 或 tools/focus_heroes.py）
 vim tools/heroes_data.py
 # 2. 重新生成（heroes.lua + talents.lua + 381 个文件 + 127 个 BotLib 文件全部重写）
 python3 tools/generate.py
-# 3. 校验 + 验证（两套都全过才算完）
+# 3. 校验 + 验证（全部全过才算完）
 python3 tools/validate.py
 lua5.4 tools/verify_v110.lua  # v1.1.0 回归: 40 项
 lua5.4 tools/verify_v200.lua  # v2.0.0: 71 项
+lua5.4 tools/verify_v300.lua  # v3.0.0: 147 项
 ```
 
 ## 许可证

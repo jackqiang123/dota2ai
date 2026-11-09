@@ -1,4 +1,4 @@
--- item_purchase_axe.lua -- Axe 斧王 -- v2.0.0: 出装走 item_purchase_generic.lua 的状态机,
+-- item_purchase_axe.lua -- Axe 斧王 -- v3.0.0: 出装走 item_purchase_generic.lua 的状态机,
 -- 读 BotLib 的 sBuyList / sSellList。
 local Generic = require(GetScriptDirectory() .. "/item_purchase_generic")
 
