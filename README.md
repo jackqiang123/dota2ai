@@ -2,7 +2,9 @@
 
 一整套、可安装、可跑的 Dota 2 Workshop Bot AI。**不是 124 份手写脚本**，而是 Valve 原生 Team / Mode / Action 三层结构 + 一张英雄数据表 + 生成器。
 
-> 版本：**v3.1.0**（2026-11-09）| 版本基准：**7.41f，127 名英雄**。
+> 版本：**v3.2.0**（2026-11-09）| 版本基准：**7.41f，127 名英雄**。
+>
+> **v3.2.0 更新日志：**新增 `tools/integration/hero_tests.lua`：per-hero integration test——127 个英雄逐个进模拟器各打一局 10 分钟短对局（1 秒 tick，种子 42 + 英雄序号，可复现；被测英雄 Radiant 按主位置/分路 + 4 个固定队友，对固定敌方 Sven/Dazzle/Enigma/Void/Lina），逐项门控判定（0 Lua 错误、移动/攻击/买装/升 ≥2 级、放过 ≥1 次技能、无 60 秒卡住、无 120 秒泉水挂机、补刀或击杀/助攻、金钱经验增长），报告 `tools/integration/hero_tests_report.md`：**126/127 通过，1 个已知限制（Timbersaw：2v3 劣势路 10 分钟 0 补刀，见下文），0 失败，全程 wall time 约 3.8 分钟**。跑的过程中修掉 16 个模拟发现的 Bot bug（详见 `tools/integration/README.md` “v3.2.0”一节），最关键的四个：(1) `GetScriptDirectory` 在 `valve_api.lua` 里定义在 BotLib require 之后，导致 127 个英雄文件加载全部静默失败、所有 Consider 从没跑过（此前“通过”的施放全是通用 fallback）；(2) 7 个 roam 英雄（ES 等）的 data lane 是 `"roam"`，`GetHeroLane` 没处理、掉到默认中路，开局全挤去中路；(3) 固定敌方阵容用 Huskar 当中单，但 Huskar 的 data lane 是 safelane，Dire 中路全程空无一人，6 个中单英雄 10 分钟见不到敌方英雄——敌方中单改成真中单 Lina（中单重名时替补 Zeus）；(4) `team_roam` / `roam` 见到敌人就 `MoveToUnit` 跟随，敌人在 0 距离也跟、四人互相跟随原地站桩 3 分钟（主对局 seed 42 因此打盾门控 0 tick），改成在攻击射程内直接攻击。v3.1.0 的全部内容保留，见下文。
 >
 > **v3.1.0 更新日志：**新增 `tools/integration/`：可重复运行的 5v5 全局模拟 integration 环境（`sim.lua` 世界模型 + `valve_api.lua` 模拟 Valve Bot API + `run.lua` 一条命令跑一局并出报告 + `last_run.md`），真 Bot 脚本进模拟对局全流程跑，9 个门控全过（种子 42：Radiant 20:02 基地胜，人头 10:2，推塔 7:7，0 Lua 错误，0 卡住，0 泉水挂机，打盾计划 67 tick）。模拟跑出的 Bot bug 全部修掉：(1) `Valve.cast` 丢英雄目标（Lion 满蓝 0 施放）；(2) 加点把攒的点全砸进同一技能，改成由（等级 − 剩余点数）推出 build 位置依次点，天赋级按天赋表点（旧版 10 级天赋永远点不上）；(3) 大招加点 6/11/16 是 7.00 前规则，改成 6/12/18 并重生成；(4) per-hero wrapper 从不调 `TryUseItems` 且天赋级直接 return，补上；(5) defend/push/laning/retreat/team_roam/roshan/attack/roam/defend_tower 等 9 个 Mode 的站桩/折返/无指令落点全部修掉（等兵落点棘轮式推进、撤退粘性目标、打盾攻击移动等），详见 `tools/integration/README.md`；(6) 打盾时间门三处（TeamThink / Macro / mode_roshan）从 20:00 统一放宽到 10:00，打盾目标改取肉山实际坑位（模拟扩展 `GetRoshanLocation()`）。v3.0.0 的全部内容保留，见下文。
 >
@@ -162,12 +164,43 @@ Sven/Dazzle/Enigma/Faceless Void/Huskar。`sim.lua` 是 5v5 世界模型
 201 命中，27 次施放，57 件买装）。重跑同一命令结果完全一致（除 wall
 time 外报告逐字相同）。
 
+### Per-hero integration test：127 个英雄逐个打一局（v3.2.0 新增）
+
+`tools/integration/hero_tests.lua`：每个英雄单独进模拟器打一局 10 分钟
+短对局（1 秒 tick，种子 42 + 英雄序号，可复现），被测英雄在 Radiant、按
+主位置/分路，4 个固定队友按位置补齐，对 5 个固定敌方
+Sven/Dazzle/Enigma/Void/Lina（与被测英雄重名时替换：中单 Lina 换 Zeus，
+其他换 Tidehunter）。每局在独立子进程里跑 `run.lua`（带 `--stats-out`），
+逐项门控判定：0 Lua 错误；移动过、攻击命中过、买过 ≥1 件装、升到 ≥3 级
+且点过 ≥2 个技能；放过 ≥1 次技能（127 名英雄都有主动技能，无豁免）；
+无卡住 60 秒以上、无泉水挂机 120 秒以上；补到 ≥1 个刀或拿到 ≥1 次击杀/
+助攻（辅助放宽到参团 ≥1 次或插眼 ≥1 个）；金钱/经验有增长。失败记失败
+原因（哪个门控 + 当时 tick + 最后一次行动）。
+
+```bash
+~/workspace/.lua/usr/bin/lua5.4 tools/integration/hero_tests.lua \
+  --out tools/integration/hero_tests_report.md --tmp /tmp/dota2ai-hero-tests
+# Lua 不在系统 PATH 时用仓库外的用户空间副本 ~/workspace/.lua/usr/bin/lua5.4，
+# 不要假设系统有 lua；也可通过 --lua 或环境变量 LUA_BIN 指定解释器。
+# 只跑某几个英雄：--only axe,zeus（种子用英雄全局序号，复现全量结果）
+```
+
+**结果（2026-11-09）：126/127 通过，1 个已知限制（Timbersaw：2v3 劣势路
+10 分钟 0 补刀，行为本身正常——38 次攻击命中、2 反补、17 次施放、0 死亡，
+补刀全被对面三人线抢走；Q 清兵分支已加但抢不到满血兵的补刀，见
+`tools/integration/hero_tests_report.md` 的“已知限制”一节），0 失败；
+全程 wall time 226 秒（约 3.8 分钟，平均每局 1.8 秒）。** 报告见
+`tools/integration/hero_tests_report.md`（每英雄一行：等级、K/D/A、
+补刀、移动、施放、购买、卡住、PASS/FAIL/KNOWN-LIMIT）。门控没有为通过而放宽；
+tick/局长也没有缩水。模拟里修掉的 bug 见 `tools/integration/README.md`
+“v3.2.0”一节。
+
 > **模拟结果不是真机结果。** 胜负、人头、补刀只说明 Bot 脚本在模拟世界里
 > 能跑通、无卡住无报错，不能说成真机 Dota 2 的强度结论。已知简化
 > （技能/物品数值为近似值、无真实弹道、无中立物品、无聊天、双方共用
 > 一个黑板、肉山坑边自动攻击规则、模拟扩展 `GetRoshanLocation()` 等）
-> 见 `tools/integration/README.md`，模拟里修掉的 13 个 Bot bug 也在那里
-> 逐条列出。
+> 见 `tools/integration/README.md`，模拟里修掉的 Bot bug（v3.1.0 13 个 +
+> v3.2.0 16 个）也在那里逐条列出。
 
 ## 英雄覆盖表（127 名，全部）
 

@@ -1,8 +1,8 @@
 "Dota 2 AI"
 {
-	"addonversion"		"3.1.0"
+	"addonversion"		"3.2.0"
 	"addontitle"		"Dota 2 AI - Valve Mode System + Data-Driven Bots"
-	"addon_description"	"Full 127-hero Dota 2 bot AI v3.1.0 (patch 7.41f). Valve native Team/Mode/Action architecture (method inspired by Valve Bot API docs and Open Hyper AI ARCHITECTURE.md; all code original): 15 mode files, TeamThink, BotLib per-hero logic with real Consider logic for all 127 heroes (fallback only as last resort, target trigger rate 0), per-position item builds, per-hero talents, data-driven generation. Hero interactions: combo windows, focus fire, rescue priority, draft synergy. Difficulty 1-4 by reaction time and decision thresholds only; Lua bot scripts cannot grant gold/XP, see README. v3.1.0 adds tools/integration: a repeatable 5v5 full-game simulation that runs the real bot scripts (seed 42: Radiant wins 20:02, 0 errors, 0 stuck).
+	"addon_description"	"Full 127-hero Dota 2 bot AI v3.2.0 (patch 7.41f). Valve native Team/Mode/Action architecture (method inspired by Valve Bot API docs and Open Hyper AI ARCHITECTURE.md; all code original): 15 mode files, TeamThink, BotLib per-hero logic with real Consider logic for all 127 heroes (fallback only as last resort, target trigger rate 0), per-position item builds, per-hero talents, data-driven generation. Hero interactions: combo windows, focus fire, rescue priority, draft synergy. Difficulty 1-4 by reaction time and decision thresholds only; Lua bot scripts cannot grant gold/XP, see README. v3.2.0 adds tools/integration/hero_tests.lua: per-hero integration tests, each of the 127 heroes plays one 10-minute simulated game (seed 42 + hero index), 126/127 PASS + 1 known limitation (Timbersaw economy in a 2v3 offlane) in ~4 min wall time; fixed 16 sim-found bugs in the process (see tools/integration/README.md).
 	"addon_url"		"https://github.com/jackqiang123/dota2ai"
 	"addon_author"		"jackqiang123"
 }

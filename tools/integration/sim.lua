@@ -205,7 +205,7 @@ function Sim.new(cfg)
       dmgMul = 1, dmgMulUntil = 0, bonusDmg = 0, bonusDmgUntil = 0,
       moveTarget = nil, followUnit = nil, attackTarget = nil, attackMoveTarget = nil,
       items = {}, stash = {}, abilities = {}, talents = {},
-      lastX = fx, lastY = fy, distance = 0,
+      lastX = fx, lastY = fy, distance = 0, lastActionAt = 0,
       damagers = {},
       stats = {
         moves = 0, attackOrders = 0, attacksLanded = 0, casts = 0, buys = 0,
@@ -266,11 +266,15 @@ local function moveToward(unit, tx, ty, speed, dt)
   local step = speed * dt
   if step >= d then
     unit.x, unit.y = tx, ty
-    return true
+  else
+    unit.x = unit.x + (tx - unit.x) / d * step
+    unit.y = unit.y + (ty - unit.y) / d * step
   end
-  unit.x = unit.x + (tx - unit.x) / d * step
-  unit.y = unit.y + (ty - unit.y) / d * step
-  return false
+  -- 地图边界 (v3.2.0): 钳制在 ±7500 内, 防止指令目标在地图外时英雄一路
+  -- 走出世界 (实测 Tidehunter 走到 x=116991)。真机地图本身有边界。
+  if unit.x > 7500 then unit.x = 7500 elseif unit.x < -7500 then unit.x = -7500 end
+  if unit.y > 7500 then unit.y = 7500 elseif unit.y < -7500 then unit.y = -7500 end
+  return step >= d
 end
 
 function Sim.giveGold(hero, amount)

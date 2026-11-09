@@ -32,6 +32,23 @@ local ab = ab["shredder_whirling_death"]
   local n = Skill.CountEnemiesInRange(snap, 400)
   if n >= 2 then return 0.85, snap.nearestEnemy, "none" end
   if n >= 1 and snap.nearestEnemyDist ~= nil and snap.nearestEnemyDist <= 350 then return 0.65, snap.nearestEnemy, "none" end
+  -- 清兵: Whirling Death 是自身周围 AoE, 本来就是清兵/打钱技能; 2v3 劣势路被压制时只靠平 A 一个补刀都拿不到
+  -- (v3.2.0 实测: 38 次命中、2 反补、0 补刀)。附近 >=3 个敌方小兵时对最近小兵放 Q, 顺带打到周围英雄
+  -- (不要求 400 内无人: 技能本来就同时打英雄+小兵; 英雄分支在上面已优先处理, 这里只补清兵;
+  -- 蓝量留 25% 以上即可: Q 只要 100 蓝, 留一个 W 逃生够了; 40% 的门槛实测几乎不触发)。
+  local nc = 0
+  local ncNear = nil
+  local ncD = 1e9
+  if snap.nearbyEnemyCreeps ~= nil and snap.location ~= nil then
+    for _, c in ipairs(snap.nearbyEnemyCreeps) do
+      local ok, l = pcall(function() return c:GetLocation() end)
+      if ok and l ~= nil then
+        local d = math.sqrt((l.x - snap.location.x) ^ 2 + (l.y - snap.location.y) ^ 2)
+        if d <= 400 then nc = nc + 1 if d < ncD then ncD = d ncNear = c end end
+      end
+    end
+  end
+  if nc >= 3 and ncNear ~= nil and (snap.manaPct or 1) > 0.25 then return 0.6, ncNear, "none" end
   return 0, nil, "none"
 
 end

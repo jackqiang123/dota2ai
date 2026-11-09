@@ -34,6 +34,9 @@ local ab = ab["necrolyte_death_pulse"]
   if ally ~= nil and pct < 0.6 and (snap.numEnemies or 0) >= 1 then return 0.8, nil, "none" end
   local n = Skill.CountEnemiesInRange(snap, 600)
   if n >= 2 then return 0.75, nil, "none" end
+-- 对线消耗: Death Pulse 本来就是可反复放的治疗/伤害技能, 单个敌人也值得放
+-- (否则对线单人满血对手时全程 0 施放, v3.2.0 实测); 蓝量留一半以上才放。
+if (snap.numEnemies or 0) >= 1 and (snap.manaPct or 1) > 0.5 then return 0.6, nil, "none" end
   return 0, nil, "none"
 end
 function X.ConsiderW(bot, snap, ab)

@@ -112,12 +112,16 @@ end
 -- 按 desire/target/castType 施放一次技能, 成功返回 true。
 -- castType: "unit" 用 Action_UseAbilityOnEntity, "location" 用
 -- Action_UseAbilityOnLocation (目标位置取 target 的位置), "none" 用 Action_UseAbility。
+-- 成功判定 (v3.2.0): 模拟里 Action_* 透传 Valve.cast 的 true/false, 只有明确
+-- 返回 false 才算失败; 真机上 Action_* 返回 void (nil), nil 也算成功 (动作已发出)。
+-- 旧版只看 pcall 成功, 模拟里施放静默失败 (射程外 / 目标类型不对) 也当成功,
+-- SkillsComplement 直接 return, 后面的 Consider 没机会试 (实测 Pugna 全程 0 施放)。
 function Skill.Cast(bot, ability, target, castType)
   if bot == nil or ability == nil then return false end
   if castType == "unit" then
     if target == nil then return false end
-    local ok = pcall(function() bot:Action_UseAbilityOnEntity(ability, target) end)
-    return ok == true
+    local ok, res = pcall(function() return bot:Action_UseAbilityOnEntity(ability, target) end)
+    return ok == true and res ~= false
   elseif castType == "location" then
     if target == nil then return false end
     -- target 可能是单位 (取 GetLocation), 也可能是原始位置表 {x=,y=,z=}
@@ -129,11 +133,11 @@ function Skill.Cast(bot, ability, target, castType)
       loc = safeCall(function() return target:GetLocation() end)
     end
     if loc == nil then return false end
-    local ok = pcall(function() bot:Action_UseAbilityOnLocation(ability, loc) end)
-    return ok == true
+    local ok, res = pcall(function() return bot:Action_UseAbilityOnLocation(ability, loc) end)
+    return ok == true and res ~= false
   else
-    local ok = pcall(function() bot:Action_UseAbility(ability) end)
-    return ok == true
+    local ok, res = pcall(function() return bot:Action_UseAbility(ability) end)
+    return ok == true and res ~= false
   end
 end
 

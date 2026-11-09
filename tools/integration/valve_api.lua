@@ -269,17 +269,38 @@ function Valve.cast(world, hero, ab, targetUnit, loc)
     -- 旧版只认 _unit, 英雄目标会落到包装表本身、因没有 alive 字段而静默失败。
     target = targetUnit._unit or targetUnit._hero or targetUnit
   end
-  -- 射程检查: 够不着就往目标走 (下 tick 再试), 不扣蓝。
-  if kind == "unit" or kind == "execute" or kind == "heal" then
-    if target == nil or not target.alive then return false end
+  -- ---- 目标形式归一 (v3.2.0): 模拟不校验技能的真实目标类型 ----
+  -- heroes.lua 的技能类型只是角色描述 (nuke/aoe_damage/channel...), 由它推断的
+  -- kind 常常和 BotLib Consider 用的真实目标形式不一致 (全量审计 117 处, 如
+  -- Luna Q 是 unit 但 fallback 判成 location, Axe Q 是自体 none 但 fallback
+  -- 判成 location)。旧版按 kind 硬性要求 target/loc, 错配就静默返回 false,
+  -- 施放次数全丢。改为按实际传入的算: 有单位打单位, 有落点打落点, 都没有以
+  -- 自身为中心; 射程检查也按实际传入的算。代价: 模拟不再能发现 Consider 用错
+  -- 目标形式的真机 bug (见 README 已知简化)。
+  if target ~= nil and loc == nil then
+    loc = { x = target.x, y = target.y, z = 0 }
+  end
+  if target == nil and loc ~= nil and (kind == "unit" or kind == "execute" or kind == "heal") then
+    -- unit 类技能被以落点调用: 取该点 350 内最近的敌方单位当目标
+    -- (Skill.Cast 传的就是目标单位的位置, 所以通常就是那个单位)。
+    local best, bestD = nil, 350
+    for _, e in ipairs(enemiesInRadius(world, loc.x, loc.y, 350, hero.team)) do
+      local d = Sim.dist(loc.x, loc.y, e.x, e.y)
+      if d < bestD then best, bestD = e, d end
+    end
+    target = best
+  end
+  -- 射程检查: 够不着就往目标走 (下 tick 再试), 不扣蓝。无目标调用 (自体技能)
+  -- 不检查射程, 以自身为中心结算。
+  if target ~= nil and (kind == "unit" or kind == "execute" or kind == "heal") then
+    if not target.alive then return false end
     local range = data.range or 600
     if Sim.dist(hero.x, hero.y, target.x, target.y) > range + 50 then
       hero.moveTarget = { x = target.x, y = target.y, z = 0 }
       hero.attackTarget = nil
       return false
     end
-  elseif kind == "location" or kind == "blink" then
-    if loc == nil then return false end
+  elseif loc ~= nil and (kind == "location" or kind == "blink") then
     local range = data.range or 600
     if kind == "location" and Sim.dist(hero.x, hero.y, loc.x, loc.y) > range + 200 then
       hero.moveTarget = { x = loc.x, y = loc.y, z = 0 }
@@ -296,6 +317,7 @@ function Valve.cast(world, hero, ab, targetUnit, loc)
     hero.hp = math.max(1, hero.hp - hero.hp * data.hpCostPct)
   end
   hero.stats.casts = hero.stats.casts + 1
+  hero.lastActionAt = world.time
   local dmg = (data.dmg or 0) * (1 + 0.25 * (ab.level - 1))
   local t = world.time
   if kind == "global" then
@@ -303,19 +325,30 @@ function Valve.cast(world, hero, ab, targetUnit, loc)
       if h.alive and h.team ~= hero.team then Sim.damage(world, h, dmg, hero) end
     end
   elseif kind == "unit" or kind == "execute" then
-    if kind == "execute" and target.hp <= 250 + 50 * ab.level then
-      Sim.damage(world, target, target.hp + 1, hero)
+    if target ~= nil then
+      if kind == "execute" and target.hp <= 250 + 50 * ab.level then
+        Sim.damage(world, target, target.hp + 1, hero)
+      else
+        Sim.damage(world, target, dmg, hero)
+      end
+      if data.control ~= nil then applyControl(world, target, data.control) end
+      if ab._name == "lion_mana_drain" and target.kind == "hero" then
+        local drain = math.min(100, target.mana)
+        target.mana = target.mana - drain
+        hero.mana = math.min(hero.maxMana, hero.mana + drain)
+      end
     else
-      Sim.damage(world, target, dmg, hero)
-    end
-    if data.control ~= nil then applyControl(world, target, data.control) end
-    if ab._name == "lion_mana_drain" and target.kind == "hero" then
-      local drain = math.min(100, target.mana)
-      target.mana = target.mana - drain
-      hero.mana = math.min(hero.maxMana, hero.mana + drain)
+      -- 无目标调用 (自体技能, 如 Axe Q): 以自身为中心打 300 范围。
+      for _, e in ipairs(enemiesInRadius(world, hero.x, hero.y, 300, hero.team)) do
+        Sim.damage(world, e, dmg, hero)
+        if data.control ~= nil then applyControl(world, e, data.control) end
+      end
     end
   elseif kind == "heal" then
-    if ab._name == "dazzle_shallow_grave" then
+    if target == nil then
+      -- 无目标治疗: 治自己。
+      Sim.heal(world, hero, 150)
+    elseif ab._name == "dazzle_shallow_grave" then
       target.graveUntil = t + 5
     elseif ab._name == "dazzle_shadow_wave" then
       Sim.heal(world, target, 150)
@@ -326,19 +359,28 @@ function Valve.cast(world, hero, ab, targetUnit, loc)
       Sim.heal(world, target, 150)
     end
   elseif kind == "location" then
+    -- 落点缺省为自身位置 (自体 AoE, 如 Tidehunter R)。
+    local ex, ey = hero.x, hero.y
+    if loc ~= nil then ex, ey = loc.x, loc.y end
     local radius = 300
     if data.control ~= nil then radius = 350 end
-    for _, e in ipairs(enemiesInRadius(world, loc.x, loc.y, radius, hero.team)) do
+    for _, e in ipairs(enemiesInRadius(world, ex, ey, radius, hero.team)) do
       Sim.damage(world, e, dmg, hero)
       if data.control ~= nil then applyControl(world, e, data.control) end
     end
     local r = world.roshan
-    if r ~= nil and r.alive and Sim.dist(loc.x, loc.y, r.x, r.y) <= radius then
+    if r ~= nil and r.alive and Sim.dist(ex, ey, r.x, r.y) <= radius then
       Sim.damage(world, r, dmg, hero)
     end
   elseif kind == "blink" then
-    hero.x, hero.y = loc.x, loc.y
-    hero.moveTarget = nil
+    -- 无落点调用 (如 Consider 传 "none"): 不位移, 只计一次施放。
+    if loc ~= nil then
+      hero.x, hero.y = loc.x, loc.y
+      -- 地图边界 (v3.2.0, 同 sim.lua moveToward 的钳制)。
+      if hero.x > 7500 then hero.x = 7500 elseif hero.x < -7500 then hero.x = -7500 end
+      if hero.y > 7500 then hero.y = 7500 elseif hero.y < -7500 then hero.y = -7500 end
+      hero.moveTarget = nil
+    end
   elseif kind == "none" then
     local radius = 400
     if ab._name == "crystal_maiden_freezing_field" then radius = 600 end
@@ -480,9 +522,14 @@ local function makeBotUnit(world, hero)
       if c.alive then
         local isEnemy = (c.team ~= h.team)
         if isEnemy == bEnemy then
-          local d = Sim.dist(h.x, h.y, c.x, c.y)
-          if d <= radius and (not isEnemy or Sim.isVisibleTo(w, h.team, c)) then
-            out[#out + 1] = wrapUnit(w, c)
+          -- 友方召唤物不进小兵列表 (v3.2.0): 真机里 Tempest Double 是英雄单位,
+          -- 本来就不在 GetNearbyCreeps 里; 模拟里召唤物原地不动, 对线跟随会卡住
+          -- (Arc Warden 复活后跟分身在泉水边乒乓)。敌方召唤物仍可当小兵打。
+          if not (not bEnemy and c.summoned) then
+            local d = Sim.dist(h.x, h.y, c.x, c.y)
+            if d <= radius and (not isEnemy or Sim.isVisibleTo(w, h.team, c)) then
+              out[#out + 1] = wrapUnit(w, c)
+            end
           end
         end
       end
@@ -538,6 +585,7 @@ local function makeBotUnit(world, hero)
   function bot.Action_MoveToLocation(self, loc)
     if loc == nil or self._hero == nil then return end
     local h = self._hero
+    h.lastActionAt = self._world.time
     local key = orderKey("move", loc.x or 0, loc.y or 0)
     if key ~= self._lastOrderKey then
       h.stats.moves = h.stats.moves + 1
@@ -551,6 +599,7 @@ local function makeBotUnit(world, hero)
   function bot.Action_MoveToUnit(self, unit)
     if unit == nil then return end
     local h = self._hero
+    h.lastActionAt = self._world.time
     local u = unit._unit or unit._hero or unit
     if u == nil then return end
     local key = "follow:" .. tostring(u.id or u)
@@ -566,6 +615,7 @@ local function makeBotUnit(world, hero)
   function bot.Action_AttackUnit(self, unit, once)
     if unit == nil then return end
     local h = self._hero
+    h.lastActionAt = self._world.time
     local u = unit._unit or unit._hero or unit
     if u == nil or not u.alive then return end
     local key = "attack:" .. tostring(u.id or u)
@@ -581,6 +631,7 @@ local function makeBotUnit(world, hero)
   function bot.Action_AttackMove(self, loc)
     if loc == nil then return end
     local h = self._hero
+    h.lastActionAt = self._world.time
     local key = orderKey("amove", loc.x or 0, loc.y or 0)
     if key ~= self._lastOrderKey then
       h.stats.moves = h.stats.moves + 1
@@ -591,17 +642,20 @@ local function makeBotUnit(world, hero)
     h.followUnit = nil
     h.attackTarget = nil
   end
+  -- 透传 Valve.cast 的返回值 (模拟扩展: 真机 Action_* 返回 void,
+  -- 模拟里返回 true/false 供 Skill.Cast 判断施放是否真的成功; 失败时
+  -- SkillsComplement 会继续试下一个 Consider, 而不是误当成功直接 return)。
   function bot.Action_UseAbility(self, ab)
-    if ab == nil then return end
-    Valve.cast(self._world, self._hero, ab, nil, nil)
+    if ab == nil then return false end
+    return Valve.cast(self._world, self._hero, ab, nil, nil)
   end
   function bot.Action_UseAbilityOnEntity(self, ab, unit)
-    if ab == nil or unit == nil then return end
-    Valve.cast(self._world, self._hero, ab, unit, nil)
+    if ab == nil or unit == nil then return false end
+    return Valve.cast(self._world, self._hero, ab, unit, nil)
   end
   function bot.Action_UseAbilityOnLocation(self, ab, loc)
-    if ab == nil or loc == nil then return end
-    Valve.cast(self._world, self._hero, ab, nil, loc)
+    if ab == nil or loc == nil then return false end
+    return Valve.cast(self._world, self._hero, ab, nil, loc)
   end
   function bot.Action_PurchaseItem(self, name)
     local h = self._hero
@@ -620,6 +674,7 @@ local function makeBotUnit(world, hero)
     h.maxHp = Sim.maxHp(h)
     h.maxMana = Sim.maxMana(h)
     h.stats.buys = h.stats.buys + 1
+    h.lastActionAt = w.time
     return true
   end
   function bot.Action_LevelAbility(self, name)
@@ -635,6 +690,7 @@ local function makeBotUnit(world, hero)
     ab.level = ab.level + 1
     h.abilityPts = h.abilityPts - 1
     h.stats.abilitiesLeveled = (h.stats.abilitiesLeveled or 0) + 1
+    h.lastActionAt = self._world.time
     return true
   end
   function bot.Action_Courier(self, action)
@@ -657,6 +713,13 @@ end
 
 function Valve.install(world, cfg)
   Valve.world = world
+  -- 必须先定义: BotLib 英雄文件顶层就调 GetScriptDirectory() 做 require;
+  -- 旧版它在 install 末尾才定义, 导致循环里 127 个 require 全失败、技能全是
+  -- fallback 名 (<key>_ability_N), Consider 按真名查表全 miss、模拟里从未跑过。
+  -- (v3.2.0 per-hero 测试发现: 9 英雄 0 施放, 其余 117 的施放也全是通用 fallback。)
+  function _G.GetScriptDirectory()
+    return "bots"
+  end
   local heroesData = require("bots/data/heroes")
   for _, hero in ipairs(world.heroes) do
     -- 技能槽 0-3: BotLib 的 ABILITIES; Invoker 另有 invoked 技能进 4-9 槽。
@@ -730,9 +793,7 @@ function Valve.install(world, cfg)
     if Valve.currentBot ~= nil then return Valve.currentBot:GetTeam() end
     return 2
   end
-  function _G.GetScriptDirectory()
-    return "bots"
-  end
+  -- GetScriptDirectory() 已移到 install 开头定义 (见上), BotLib 顶层 require 要用。
   function _G.GetItemCost(name)
     return Valve.itemCost(name)
   end

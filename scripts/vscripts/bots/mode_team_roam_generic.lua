@@ -21,7 +21,17 @@ function M.Think(bot, snap, bb)
   local Team = require(GetScriptDirectory() .. "/engine/team")
   local window = Team.GetComboWindow()
   if window ~= nil and window.loc ~= nil then pcall(function() bot:Action_MoveToLocation(window.loc) end) return end
-  if snap.nearestEnemy ~= nil then pcall(function() bot:Action_MoveToUnit(snap.nearestEnemy) end) return end
+  if snap.nearestEnemy ~= nil then
+    -- 敌人已在攻击射程内就直接打, 不要 MoveToUnit 跟着站桩: 目标在 0 距离
+    -- 时跟随指令等于原地不动, 多人互相跟随能卡几分钟 (模拟实测 seed 42:
+    -- Axe+Magnus 与 Sven+Void 在同一坐标跟了 3 分钟, 队伍凑不够 3 人抱团,
+    -- 打盾计划一次没触发)。真机也一样: 贴着敌人就该打, 不是跟。
+    local ed = snap.nearestEnemyDist
+    if ed ~= nil and ed <= (snap.attackRange or 150) then
+      pcall(function() bot:Action_AttackUnit(snap.nearestEnemy, false) end) return
+    end
+    pcall(function() bot:Action_MoveToUnit(snap.nearestEnemy) end) return
+  end
   -- 没有连招窗口、看不到敌人: 去找最近的队友抱团, 不要原地干站。
   -- 旧版此时不下任何指令, 但 GetDesire 保底 0.2 会让它在无目标时长期胜出并站桩 (模拟实测)。
   if snap.nearbyAllies ~= nil and #snap.nearbyAllies > 0 then

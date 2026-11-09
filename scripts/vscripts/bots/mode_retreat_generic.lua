@@ -16,8 +16,12 @@ M.NAME = "retreat"
 local retreatTarget = {}
 
 local function botKey(bot)
-  local ok, name = pcall(function() return bot:GetUnitName() end)
-  if ok and name ~= nil then return name end
+  -- 唯一键: 优先 PlayerID (同名英雄分属两队时名字会撞, 见 mode_dispatcher;
+  -- 模拟共用一个 Lua 状态, 两个 Sven 会共用一个撤退目的地)。
+  local ok, pid = pcall(function() return bot:GetPlayerID() end)
+  if ok and pid ~= nil then return "pid:" .. tostring(pid) end
+  local ok2, name = pcall(function() return bot:GetUnitName() end)
+  if ok2 and name ~= nil then return name end
   return tostring(bot)
 end
 

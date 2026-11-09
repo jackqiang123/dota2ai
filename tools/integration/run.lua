@@ -2,7 +2,9 @@
 -- 用法 (仓库根目录): lua5.4 tools/integration/run.lua [--minutes 40] [--tick 1]
 --   [--seed 42] [--difficulty 3] [--radiant axe,zeus,lion,crystal_maiden,magnus]
 --   [--dire sven,dazzle,enigma,faceless_void,huskar] [--out tools/integration/last_run.md]
---   [--debug]  (每 15 秒打印每个 Bot 的位置 / 快照 / 最后一道指令, 用于定位卡住)
+--   [--stats-out /tmp/run_stats.lua] [--debug]  (每 15 秒打印每个 Bot 的位置 / 快照 / 最后一道指令, 用于定位卡住)
+-- --stats-out 写一份结构化 Lua 表 (return {...}, 可 dofile 加载), 供 hero_tests.lua
+-- 逐英雄判定门控; 不给则不写。
 -- 每 tick 顺序按 Valve 调用约定: TeamThink -> 各 Bot Think ->
 -- 各 Bot AbilityUsageThink / ItemPurchaseThink / AbilityLevelUpThink -> 世界步进。
 -- 退出码 0 = 全部 gate 通过; 1 = 有 gate 未通过 (见报告)。
@@ -14,7 +16,7 @@ local function parseArgs()
     minutes = 40, tick = 1.0, seed = 42, difficulty = 3,
     radiant = "axe,zeus,lion,crystal_maiden,magnus",
     dire = "sven,dazzle,enigma,faceless_void,huskar",
-    out = nil, debug = false, trace = nil,
+    out = nil, statsOut = nil, debug = false, trace = nil,
   }
   local i = 1
   while arg[i] ~= nil do
@@ -26,6 +28,7 @@ local function parseArgs()
     elseif a == "--radiant" then o.radiant = arg[i + 1] or o.radiant i = i + 2
     elseif a == "--dire" then o.dire = arg[i + 1] or o.dire i = i + 2
     elseif a == "--out" then o.out = arg[i + 1] i = i + 2
+    elseif a == "--stats-out" then o.statsOut = arg[i + 1] i = i + 2
     elseif a == "--debug" then o.debug = true i = i + 1
     elseif a == "--trace" then o.trace = arg[i + 1] i = i + 2
     else i = i + 1 end
@@ -84,7 +87,9 @@ local function laneFor(team, key)
   local lane = "mid"
   if hd ~= nil and hd.lane ~= nil then lane = hd.lane end
   if lane == "mid" then return "mid" end
-  if lane == "offlane" then
+  if lane == "offlane" or lane == "roam" then
+    -- roam (游走位) 开局跟劣势路走, 和 offlane 同一路; 与 utility.GetHeroLane
+    -- 保持一致 (旧版 roam 掉到下面的 safelane 分支, 和 Bot 自认的中路也不一致)。
     if team == 2 then return "top" else return "bot" end
   end
   -- safelane 与 support 都跟大哥走安全线。
@@ -188,6 +193,9 @@ local aborted = nil
 for _, hero in ipairs(world.heroes) do
   hero._stickX, hero._stickY, hero._stickT = hero.x, hero.y, 0
   hero._stickAlive = true
+  -- 卡住检测的行动基线: 站桩补刀 (位移小但一直在攻击/放技能) 不是卡住,
+  -- 只有位移 <50 且 60 秒内零行动 (无命中/施放/购买/移动指令) 才算卡住。
+  hero._stickActs = 0
   hero._fountainSecs = 0
   hero._respawnGraceUntil = 0
 end
@@ -247,9 +255,11 @@ for tick = 1, totalTicks do
       if world.time - h._stickT >= 60 then
         if h._stickAlive then
           local d = Sim.dist(h._stickX, h._stickY, h.x, h.y)
-          if d < 50 and h.stuck == nil then
+          local acts = h.stats.attacksLanded + h.stats.casts + h.stats.buys + h.stats.moves
+          if d < 50 and acts == (h._stickActs or 0) and h.stuck == nil then
             h.stuck = { at = world.time, x = h.x, y = h.y, moved = d }
           end
+          h._stickActs = acts
         end
         h._stickX, h._stickY, h._stickT = h.x, h.y, world.time
         h._stickAlive = true
@@ -493,6 +503,51 @@ if f ~= nil then
   print("report written: " .. opts.out)
 else
   print("WARNING: could not write report to " .. opts.out)
+end
+-- ---- 结构化 stats (hero_tests.lua 用 dofile 加载, 供逐英雄门控判定) ----
+if opts.statsOut ~= nil then
+  local function q(s) return string.format("%q", tostring(s)) end
+  local sb = {}
+  sb[#sb + 1] = "return {\n"
+  sb[#sb + 1] = "  minutes = " .. opts.minutes .. ", tick = " .. opts.tick .. ", seed = " .. opts.seed
+    .. ", difficulty = " .. opts.difficulty .. ",\n"
+  sb[#sb + 1] = "  radiant = " .. q(table.concat(radiantKeys, ",")) .. ", dire = " .. q(table.concat(direKeys, ",")) .. ",\n"
+  sb[#sb + 1] = "  wallSecs = " .. string.format("%.2f", wallSecs) .. ", gameTime = " .. string.format("%.1f", world.time)
+    .. ", winner = " .. tostring(world.winner) .. ", endReason = " .. q(world.endReason or "") .. ",\n"
+  sb[#sb + 1] = "  totalKills = " .. totalKills .. ", totalTowers = " .. totalTowers
+    .. ", planRoshanTicks = " .. planRoshanTicks .. ", teamfights = " .. #world.teamfights .. ",\n"
+  sb[#sb + 1] = "  errors = {\n"
+  for _, e in ipairs(errors) do
+    sb[#sb + 1] = "    { tick = " .. e.tick .. ", time = " .. string.format("%.1f", e.time)
+      .. ", bot = " .. q(e.bot) .. ", phase = " .. q(e.phase) .. ", err = " .. q(e.err) .. " },\n"
+  end
+  sb[#sb + 1] = "  },\n"
+  sb[#sb + 1] = "  heroes = {\n"
+  for _, h in ipairs(world.heroes) do
+    local s = h.stats
+    sb[#sb + 1] = "    { key = " .. q(h.key) .. ", team = " .. h.team .. ", level = " .. h.level
+      .. ", kills = " .. s.kills .. ", deaths = " .. s.deaths .. ", assists = " .. s.assists
+      .. ", lasthits = " .. s.lasthits .. ", denies = " .. s.denies
+      .. ", goldEarned = " .. math.floor(h.goldEarned) .. ", goldSpent = " .. math.floor(h.goldSpent)
+      .. ", moves = " .. s.moves .. ", distance = " .. math.floor(h.distance)
+      .. ", attackOrders = " .. s.attackOrders .. ", attacksLanded = " .. s.attacksLanded
+      .. ", casts = " .. s.casts .. ", buys = " .. s.buys
+      .. ", abilitiesLeveled = " .. (s.abilitiesLeveled or 0) .. ", fightsJoined = " .. s.fightsJoined
+      .. ", wards = " .. s.wards .. ", roshanKills = " .. s.roshanKills
+      .. ", stuck = " .. tostring(h.stuck ~= nil) .. ", stuckAt = " .. (h.stuck ~= nil and string.format("%.1f", h.stuck.at) or "nil")
+      .. ", fountainCamp = " .. tostring(h.fountainCamp ~= nil)
+      .. ", lastActionAt = " .. string.format("%.1f", h.lastActionAt or 0) .. " },\n"
+  end
+  sb[#sb + 1] = "  },\n"
+  sb[#sb + 1] = "}\n"
+  local sf = io.open(opts.statsOut, "w")
+  if sf ~= nil then
+    sf:write(table.concat(sb))
+    sf:close()
+    print("stats written: " .. opts.statsOut)
+  else
+    print("WARNING: could not write stats to " .. opts.statsOut)
+  end
 end
 print("")
 print(report)

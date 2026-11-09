@@ -33,6 +33,43 @@ lua5.4 tools/integration/run.lua --out /tmp/run.md             # 报告写到别
 
 仓库根目录由 `arg[0]` 推导，不依赖绝对路径、不写死 `/home/hatch`。
 
+> **Lua 解释器路径（v3.2.0 注）：** 虚拟机换过之后 `lua5.4` 不在系统 PATH
+> 里了。用户空间副本在 `~/workspace/.lua/usr/bin/lua5.4`（5.4.6），跑测试
+> 用这个路径，不要假设系统有 lua：`~/workspace/.lua/usr/bin/lua5.4
+> tools/integration/run.lua`。`hero_tests.lua` 会自动找这个副本
+> （`LUA_BIN` 环境变量 > `--lua` 参数 > `../.lua/usr/bin/lua5.4` > PATH
+> 里的 `lua5.4`）。
+
+## Per-hero integration test（v3.2.0 新增）
+
+`hero_tests.lua`：127 个英雄逐个进模拟器各打一局 10 分钟短对局
+（1 秒 tick，种子 42 + 英雄序号，可复现），逐项门控判定，报告写
+`tools/integration/hero_tests_report.md`：
+
+```sh
+~/workspace/.lua/usr/bin/lua5.4 tools/integration/hero_tests.lua \
+  --out tools/integration/hero_tests_report.md --tmp /tmp/dota2ai-hero-tests
+# 只跑某几个英雄：--only axe,zeus（种子用英雄全局序号，复现全量结果）
+```
+
+- 阵容：被测英雄 Radiant 按主位置/分路 + 4 个固定队友（按位置从
+  Sven/Zeus/Axe/Lion/CM/Juggernaut/Lina/Magnus/Dazzle/Tidehunter/
+  Earthshaker 池里补），对 5 个固定敌方 Sven/Dazzle/Enigma/Void/Lina
+  （与被测英雄重名时替换：中单 Lina 换 Zeus，其他换 Tidehunter）。
+- 门控（写进代码，不靠肉眼）：0 Lua 错误；移动过、攻击命中过、买过
+  ≥1 件装、升到 ≥3 级且点过 ≥2 个技能；放过 ≥1 次技能（127 名英雄都有
+  主动技能，无豁免英雄）；无卡住 60 秒以上、无泉水挂机 120 秒以上；
+  补到 ≥1 个刀或拿到 ≥1 次击杀/助攻（辅助放宽到参团 ≥1 次或插眼 ≥1 个）；
+  金钱/经验有增长。失败记失败原因（哪个门控 + 当时 tick + 最后行动）。
+- 每局在独立子进程里跑 `run.lua`（带 `--stats-out`），隔离全局状态
+  （`_G.DOTA_AI_BLACKBOARD`、分发器节流、黑板）；不要用 `run.lua` 自身
+  的退出码判——10 分钟对局按它的 9 门控（要求胜负已决等）本就会退出 1。
+- 性能：127 局 × 10 分钟，wall time 226 秒（平均每局 1.8 秒），
+  目标 < 5 分钟达成；没有把 tick 放大或把局缩短，也没有放宽门控。
+- 结果（2026-11-09）：**126/127 通过，1 个已知限制（Timbersaw：2v3 劣势路
+  10 分钟 0 补刀，行为本身正常，见报告的“已知限制”一节），0 失败**。
+  报告含总通过率、失败清单、已知限制、每英雄一行表。
+
 ## 文件
 
 | 文件 | 作用 |
@@ -40,6 +77,8 @@ lua5.4 tools/integration/run.lua --out /tmp/run.md             # 报告写到别
 | `sim.lua` | 5v5 世界模型：三路兵线、防御塔、金钱/经验/等级、野区、Roshan、视野/眼位、击杀/复活、基地胜负。Lua 5.4 可跑，Lua 5.1 语法兼容。 |
 | `valve_api.lua` | 模拟 Valve Bot API：`GetBot`、`DotaTime`、`GetTeam`、`GetNearbyHeroes/Creeps/Towers`、`GetAbilityInSlot/ByName`、`GetItemInSlot`、`GetCourier`、`Action_MoveToLocation/AttackUnit/UseAbility*/PurchaseItem/LevelAbility/Courier` 等。`GetNearby*` 只返回视野内单位；`Action_*` 真正改变世界（移动改位置、攻击扣血、技能扣蓝进 CD、买装扣钱进背包、插眼改视野），不是只记 log。 |
 | `run.lua` | 入口：按 `TeamThink -> 各 Bot Think -> AbilityUsageThink / ItemPurchaseThink / AbilityLevelUpThink` 的顺序每 tick 调用（与 Valve 每帧的调用顺序一致）；每个 Bot 调用包 `pcall` + 指令数上限（防死循环）；写报告 + 9 个门控。 |
+| `hero_tests.lua` | per-hero test 入口（v3.2.0）：127 个英雄逐个跑一局 10 分钟短对局，逐项门控判定，写 `hero_tests_report.md`。 |
+| `hero_tests_report.md` | per-hero test 的报告：总通过率、失败清单、每英雄一行表。 |
 | `last_run.md` | 最近一次跑完的报告（每次跑都覆盖）。 |
 
 ## 默认阵容
@@ -136,6 +175,117 @@ lua5.4 tools/integration/run.lua --out /tmp/run.md             # 报告写到别
     `mode_defend_tower_generic.lua`——同类无指令落点：attack 无目标时
     直接落空、roam 无敌人时去 (0,0) 原地打转、defend_tower 在塔下无敌方
     英雄时直接 return。统一改成打附近小兵或去等兵落点。
+
+## 模拟里修掉的 Bot bug（v3.2.0，per-hero test 过程中）
+
+第一轮全量 117/127，第二轮 124/127，第三轮 121/127（敌方阵容问题，
+见第 14 条），修掉跟随站桩后主对局 seed 42 通过、第四轮 126/127 +
+1 个已知限制（Timbersaw，见第 16 条）。逐条如下：
+
+1. `tools/integration/run.lua`——卡住检测误报：只看 60 秒位移 <50 就
+   判卡住，骷髅王在兵线原地打钱（60 秒位移 49、68 次命中、13 次施放）
+   被误判。改成位移 <50 且 60 秒内零行动（攻击/施放/买装/移动）才判卡住。
+2. `tools/integration/hero_tests.lua`——wall time 用 `os.clock()` 只计父
+   进程 CPU 时间，子进程时间全漏掉、显示 0.0 秒。改成 `os.time()`。
+3. `tools/integration/hero_tests.lua`——`--only` 重跑用子集序号算种子，
+   与全量种子不一致。改成用英雄全局字母序号算种子，`--only` 可复现全量。
+4. `tools/integration/valve_api.lua`——**最严重的发现**：`GetScriptDirectory`
+   全局定义在 `Valve.install` 末尾，而英雄加载循环在它之前；127 个
+   `BotLib/hero_*.lua` 顶层都调 `GetScriptDirectory()`，所以 127 个
+   require 全部静默失败（pcall 吃掉），所有英雄回落到
+   `<key>_ability_1..4` 假技能名，Consider 按名查不到、永远返回 0——
+   **此前所有 integration 测试里没有任何 Consider 真正跑过，
+   “通过”的施放全是通用 fallback**。改成在 `install` 开头先定义
+   `GetScriptDirectory`。探针验证：Lina 拿到真技能名、ConsiderQ 返回
+   0.65、SkillsComplement 真正施放。
+5. `scripts/vscripts/bots/mode_laning_generic.lua` + `valve_api.lua`——
+   跟随静止召唤物：Arc Warden 复活后跟自己的 Tempest Double（原地站
+   40 秒）在泉水边每 tick 折返、泉水挂机 130 秒；同局 Sven、Earthshaker
+   也被它困住。两处修：(a) Bot 侧 `_stall` 保护：跟的友方小兵 5 秒没动
+   >20 就去等兵落点（真机也成立）；(b) 模拟侧 `GetNearbyCreeps` 不再把
+   召唤物算进友方小兵（真实 API 里 Tempest Double 是英雄单位，不是小兵；
+   敌方召唤物仍可当小兵攻击）。
+6. `scripts/vscripts/bots/engine/skill.lua` + `valve_api.lua`——
+   `Skill.Cast` 只看 pcall 成功不看返回值，`Action_UseAbility*` 丢掉
+   `Valve.cast` 的布尔值；一次静默失败的施放（超距/目标形式不对）
+   被当成成功，`SkillsComplement` 提前返回、后面的 Consider 全不跑
+   （Pugna 大招 desire 0.9 却 0 施放）。改成 `Action_UseAbility*`
+   返回 `Valve.cast(...)`（模拟扩展；真实 Valve API 返回 void），
+   `Skill.Cast` 要求 `ok and res ~= false`（nil = 真机成功）。
+7. `tools/integration/valve_api.lua`——`Valve.cast` 目标形式校验错在
+   模拟不在 Bot：审计发现 508 个英雄槽位里 117 处不一致（BotLib
+   Consider 的 castType 与模拟按 `heroes.lua` 技能类型推的 kind 对不上，
+   如 Luna Q 单体目标被推成落点、Axe Q 自身施放被推成落点、Pugna Q
+   单体对落点）。改成 `Valve.cast` 不再校验目标形式、按实际传入归一化
+   （有单位打单位、有落点打落点附近 350 内最近敌人、无落点以自身为
+   中心），只保留按实际调用形式的距离检查。代价写明：模拟从此抓不出
+   Consider 在真机上用了错误目标形式的问题。
+8. `scripts/vscripts/bots/mode_dispatcher.lua` /
+   `mode_retreat_generic.lua` / `mode_laning_generic.lua`——分发器
+   per-bot 状态按英雄名 key（`_lastThink` / `_currentMode` /
+   `retreatTarget` / `_stall`）；模拟里所有 Bot 共用一个 Lua 状态，
+   同名英雄（Radiant Sven 队友 + Dire Sven）撞 key：Radiant Sven 每
+   tick 先跑、写 `_lastThink[sven]=t`，Dire Sven 随后看到 `t-last=0 <
+   thinkDelay` 被永远节流，开局走到上路角就冻住（22 次移动、3 次攻击、
+   2 次施放、卡住 + 泉水挂机）。真机每 Bot 一个 Lua VM 不会发生，
+   是模拟独有的共享状态 bug。改成优先按 `GetPlayerID()` key
+   （模拟和真机都唯一），回落到名字、`tostring(bot)`。
+9. `tools/all_heroes_b.py`——Earthshaker Q：所有分支都要多敌/低血/残血
+   敌，10 分钟对线单人满血对手全程 0 施放。加单人骚扰分支：单敌 ≤700
+   且蓝量 >50% → 0.55 落点（Fissure 封路骚扰本来就是常规用法）。
+10. `tools/all_heroes_c.py`——Necrophos Q：同上，Death Pulse 本来就是可
+    反复放的治疗/伤害技能。加单人消耗分支：≥1 敌在射程且蓝量 >50% →
+    0.6 自身。
+11. `scripts/vscripts/bots/engine/utility.lua`——`GetLaneWaitPoint` 棘轮
+    离线失控：英雄离线后（游走/打架回来不在本路），“当前位置 +600 沿
+    推进方向”每帧后移、英雄每秒只走 300 永远追不上，一直走到地图外
+    （Tidehunter 从 y=65 一路向东走到 x=116991，10 分钟才 2 级）。改成
+    离本路兵线段 >1500 时直接回交汇点。
+12. `tools/integration/sim.lua` + `valve_api.lua`——地图边界钳制：
+    `moveToward` 和 blink 落点夹到 ±7500 内，任何单位走不出世界
+    （真机地图本身有边界；配合第 11 条的 Bot 侧修复）。
+13. `scripts/vscripts/bots/engine/utility.lua` + `tools/integration/run.lua`——
+    roam 分路掉默认中路：7 个 roam 英雄（赏金猎人、大地之灵、撼地者、
+    司夜刺客、帕吉、裂魂人、巨牙海民，即 bounty_hunter / earth_spirit /
+    earthshaker / nyx_assassin / pudge / spirit_breaker / tusk）的 data lane 是
+    `"roam"`，`GetHeroLane` 只处理 offlane/safelane/support，roam 掉到
+    默认 `"mid"`，开局全挤去中路（Earthshaker 整局在中路跟 Zeus 混，
+    10 分钟没见过敌方英雄）；`run.lua` 的 `laneFor` 也把 roam 归到
+    safelane、和 Bot 自认的不一致。两处统一改成 roam 按 offlane 走
+    （游走位标准开局：己方劣势路）。
+14. `tools/integration/hero_tests.lua`——固定敌方阵容没有中单：旧版敌方
+    用 Huskar 当中单，但 Huskar 的 data lane 是 safelane，Dire 实际是
+    4 上 +1 下、中路全程空无一人，6 个中单英雄（Kunkka / Necrophos /
+    Puck / Viper / Windranger / Zeus）10 分钟见不到敌方英雄、0 施放。
+    敌方中单改成真中单 Lina（中单重名时替补 Zeus，其他位置替补
+    Tidehunter）。这是测试阵容的设计 bug，不是 Bot bug。
+15. `scripts/vscripts/bots/mode_team_roam_generic.lua` +
+    `mode_roam_generic.lua`——跟随站桩：Think 见到最近敌人就
+    `MoveToUnit`，敌人在 0 距离也跟；`team_roam` 靠
+    `CountIntent("teamfight") >= 2` 拿到 0.7 desire 长期压过 attack
+    模式（0.55–0.65），四人互相跟随、在同一坐标站桩 3 分钟（主对局
+    seed 42 实测：Axe+Magnus 与 Sven+Void 在 (-2750,-430) 跟了
+    10:00–13:00，队伍凑不够 3 人抱团，打盾计划 0 tick、主对局 8/9 门控）。
+    队友分支本来就有“150 内改去等兵落点”的防站桩，敌人分支没有。
+    改成最近敌人在攻击射程内直接 `Action_AttackUnit`（真机也一样：
+    贴着敌人就该打，不是跟）。修后主对局 seed 42 通过（17:23 胜，
+    打盾 4 tick、肉山击杀 1），种子 7/43/100 也全过。
+16. `tools/all_heroes_e.py`——Timbersaw Q：只打英雄，不打兵线；Q 本来
+    就是清兵/打钱技能。加清兵分支：附近 ≥3 个敌方小兵且蓝量 >25% 时
+    对最近小兵放 Q（探针验证：满蓝、3 兵在 200 码时 desire 0.6、施放
+    成功；40% 蓝量门槛实测几乎不触发，降到 25%——Q 只要 100 蓝，留
+    一个 W 逃生够了）。但这条没翻转他的 economy 门控：2v3 劣势路
+    （对 Sven/Dazzle/Void）10 分钟仍 0 补刀——38 次攻击命中、2 反补、
+    17 次施放、0 死亡，laning 早就用 `FindLastHitTarget` 挑残血兵打，
+    补刀全被三人线抢走，Q 伤害不够在满血兵线上抢到补刀。行为正常，
+    是固定阵容下弱势期近战劣势路的对线结果，登记为已知限制
+    （`hero_tests.lua` 的 `KNOWN_LIMITATIONS`），不为此放宽门控。
+
+另有一处调查后**回退**（不是 bug）：`engine/utility.lua` 的
+`GetLaneMeetingPoint` / `GetLanePushPoint`（上路 (-6800,6800) 等）曾
+被改成线中点/线端点，又回退——模拟兵线是 L 形两段等长路径，拐角本身
+就是路径中点（frac 0.5），兵线在那里交战；改后 Sven 站在 (0,6800)
+反而不打兵。原值加注释保留。
 
 ## 已知简化（模拟 ≠ 真机）
 

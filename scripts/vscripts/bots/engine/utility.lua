@@ -39,12 +39,21 @@ end
 
 -- 兵线落点 (简化坐标, 模拟与实战共用): 本路交汇点在己方半场, 推进点在敌方半场。
 -- lane 取 "top" / "mid" / "bot", team 取 2 (Radiant) / 3 (Dire)。
+-- 兵线交汇点: 两波小兵相遇的中点。注意模拟的兵线是 L 形折线 (见
+-- Sim.LANE_PATHS): top/bottom 两段等长, 拐角正好在路径中点 (0.5), 所以
+-- 两波兵在拐角相遇 —— top 是 (-6800,6800), bot 是 (6800,-6800),
+-- 不是外侧中段 (0,±6800) (兵线只是路过那里, 不交战; v3.2.0 曾误改成
+-- (0,±6800), 实测 Sven 在 (0,6800) 站桩 60 秒+、3 次攻击, 已 revert)。
 function Utility.GetLaneMeetingPoint(lane, team)
   if lane == "top" then return { x = -6800, y = 6800, z = 0 } end
   if lane == "bot" then return { x = 6800, y = -6800, z = 0 } end
   return { x = 0, y = 0, z = 0 }
 end
 
+-- 推进点: 本路敌方那一端 (推线 / 推塔的前进方向, 沿兵线折线走)。
+-- 注意: Dire 上单的推进点是 (-6800,-6800) (从拐角沿左边缘向下、去 Radiant
+-- 基地), 不是 (-6800,6800) (那就是交汇点本身, 方向为零); 同理 Radiant 下单
+-- 是 (6800,6800)。v3.2.0 曾误按“敌方端点”改过, 已 revert。
 function Utility.GetLanePushPoint(lane, team)
   if lane == "mid" then
     if team == 3 then return { x = -5000, y = -5000, z = 0 } end
@@ -58,6 +67,10 @@ end
 -- 或已经在线上越过交汇点, 就从当前位置再向敌方半场前进 600 (不超过推进点)。
 -- 固定交汇点会让英雄在两波兵之间原地等到卡住 (模拟实测: 两波兵的交战点
 -- 固定, 英雄站在那儿有打不完的小兵, 60 秒以上零位移)。
+-- 离线保护 (v3.2.0): 棘轮只在线上才成立 —— 如果英雄离本路兵线段超过 1500
+-- (游走 / 打架后不在本路), 不要从当前位置再往前顶 600: 目标每帧后移,
+-- 英雄每秒只走 300 永远追不上, 一直走到地图外 (模拟实测 Tidehunter 从
+-- y=65 一路向东走到 x=116991)。离线时直接回交汇点。
 function Utility.GetLaneWaitPoint(bot, snap)
   local lane = Utility.GetHeroLane(bot, snap)
   local team = 2
@@ -71,6 +84,15 @@ function Utility.GetLaneWaitPoint(bot, snap)
     local dy = push.y - meet.y
     local plen = math.sqrt(dx * dx + dy * dy)
     if plen > 0 then
+      -- 点到兵线段 (meet->push) 的距离: 超过 1500 说明不在本路上。
+      local vx, vy = loc.x - meet.x, loc.y - meet.y
+      local tt = (vx * dx + vy * dy) / (plen * plen)
+      if tt < 0 then tt = 0 elseif tt > 1 then tt = 1 end
+      local cx, cy = meet.x + dx * tt, meet.y + dy * tt
+      local offLane = math.sqrt((loc.x - cx) * (loc.x - cx) + (loc.y - cy) * (loc.y - cy))
+      if offLane > 1500 then
+        return meet
+      end
       -- 沿兵线方向的投影: >0 表示已在交汇点或越过交汇点。
       local proj = (loc.x - meet.x) * dx + (loc.y - meet.y) * dy
       local ndx = loc.x - meet.x
@@ -102,7 +124,10 @@ function Utility.GetHeroLane(bot, snap)
     if hd ~= nil and hd.lane ~= nil then
       local team = 2
       if snap ~= nil and snap.team ~= nil then team = snap.team end
-      if hd.lane == "offlane" then
+      if hd.lane == "offlane" or hd.lane == "roam" then
+        -- roam (游走位, 4 号位) 开局跟劣势路走, 和 offlane 同一路: 旧版这里
+        -- 没处理 "roam", 掉到默认 "mid", 7 个 roam 英雄开局全挤去中路
+        -- (模拟实测 Earthshaker 整局在中路跟 Zeus 混, 10 分钟没见过敌方英雄)。
         lane = (team == 2) and "top" or "bot"
       elseif hd.lane == "safelane" or hd.lane == "support" then
         lane = (team == 2) and "bot" or "top"

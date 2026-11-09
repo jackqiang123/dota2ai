@@ -17,7 +17,15 @@ function M.GetDesire(bot, snap, bb)
 end
 
 function M.Think(bot, snap, bb)
-  if snap.nearestEnemy ~= nil then pcall(function() bot:Action_MoveToUnit(snap.nearestEnemy) end) return end
+  if snap.nearestEnemy ~= nil then
+    -- 敌人已在攻击射程内就直接打, 不要 MoveToUnit 跟着站桩
+    -- (同 mode_team_roam_generic 的修复: 0 距离跟随等于原地不动)。
+    local ed = snap.nearestEnemyDist
+    if ed ~= nil and ed <= (snap.attackRange or 150) then
+      pcall(function() bot:Action_AttackUnit(snap.nearestEnemy, false) end) return
+    end
+    pcall(function() bot:Action_MoveToUnit(snap.nearestEnemy) end) return
+  end
   -- 看不到敌人: 去等兵落点巡逻, 不要在 (0,0) 原地干站。
   local Utility = require(GetScriptDirectory() .. "/engine/utility")
   pcall(function() bot:Action_MoveToLocation(Utility.GetLaneWaitPoint(bot, snap)) end)

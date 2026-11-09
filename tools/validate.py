@@ -26,7 +26,13 @@ def main():
     print("lua files found: %d" % len(lua_files))
 
     # 1. luac 语法校验(优先);本机无 luac 时回退到 Python 括号/关键字配对检查。
+    # 注意: 虚拟机换过之后 /usr/bin/luac 可能没了, 解释器在仓库外的用户空间副本
+    # ~/workspace/.lua/usr/bin/luac5.4, 这里也找一下 (PATH 里没有时才用)。
     luac = shutil.which("luac") or shutil.which("luac5.4")
+    if not luac:
+        ws_luac = root.parent / ".lua" / "usr" / "bin" / "luac5.4"
+        if ws_luac.exists():
+            luac = str(ws_luac)
     if luac:
         print("validator: %s" % luac)
         for f in lua_files:
@@ -274,7 +280,7 @@ def main():
     # 20. v3.1.0: integration 环境齐全 —— sim / valve_api / run / README 存在;
     # luac 过 integration 文件 (注意: 检查 1 的 luac 只扫 bots 目录, 这里单独扫);
     # 不得有 /home/hatch 硬编码 (run.lua 用 arg[0] 推导仓库根目录);
-    # 版本号 3.1.0 (addoninfo.txt + 主 README 含 integration 一节)。
+    # 版本号 3.2.0 (addoninfo.txt + 主 README 含 integration 一节)。
     # 注意: validate.py 里不跑完整对局 (那是 run.lua 的事, 40 分钟太长),
     # 只做存在性 / 语法 / 路径 / 版本检查。
     integ = root / "tools" / "integration"
@@ -282,29 +288,49 @@ def main():
         if not (integ / name).exists():
             errors.append("tools/integration/%s missing" % name)
     if luac:
-        for name in ["sim.lua", "valve_api.lua", "run.lua"]:
+        for name in ["sim.lua", "valve_api.lua", "run.lua", "hero_tests.lua"]:
             f = integ / name
             if f.exists():
                 r = subprocess.run([luac, "-p", str(f)], capture_output=True, text=True)
                 if r.returncode != 0:
                     errors.append("luac FAIL tools/integration/%s: %s" % (name, (r.stderr or r.stdout).strip()))
-    for name in ["sim.lua", "valve_api.lua", "run.lua"]:
+    for name in ["sim.lua", "valve_api.lua", "run.lua", "hero_tests.lua"]:
         f = integ / name
         if f.exists():
             txt = f.read_text(encoding="utf-8", errors="replace")
             if "/home/hatch" in txt or "/home/" in txt:
                 errors.append("tools/integration/%s contains hardcoded /home/ path" % name)
     addoninfo = (root / "addoninfo.txt").read_text(encoding="utf-8", errors="replace")
-    if '"3.1.0"' not in addoninfo:
-        errors.append("addoninfo.txt is not 3.1.0")
+    if '"3.2.0"' not in addoninfo:
+        errors.append("addoninfo.txt is not 3.2.0")
     main_readme = (root / "README.md").read_text(encoding="utf-8", errors="replace")
-    if "v3.1.0" not in main_readme or "tools/integration" not in main_readme:
-        errors.append("main README missing v3.1.0 / integration section")
+    if "v3.2.0" not in main_readme or "tools/integration" not in main_readme:
+        errors.append("main README missing v3.2.0 / integration section")
     run_txt = ""
     if (integ / "run.lua").exists():
         run_txt = (integ / "run.lua").read_text(encoding="utf-8", errors="replace")
     if "arg[0]" not in run_txt:
         errors.append("tools/integration/run.lua does not derive repo root from arg[0]")
+
+    # 21. v3.2.0: per-hero integration tests —— hero_tests.lua 存在; 报告存在且
+    # 通过 + 已知限制 == 127 且失败 == 0 (已知限制见 hero_tests.lua 的
+    # KNOWN_LIMITATIONS, 每个都要有真实原因; 不能用它掩盖未调查的失败)。
+    if not (integ / "hero_tests.lua").exists():
+        errors.append("tools/integration/hero_tests.lua missing")
+    hero_report = integ / "hero_tests_report.md"
+    if not hero_report.exists():
+        errors.append("tools/integration/hero_tests_report.md missing (run hero_tests.lua)")
+    else:
+        rep_txt = hero_report.read_text(encoding="utf-8", errors="replace")
+        m = re.search(r"通过率: (\d+)/(\d+) \([\d.]+%\), 已知限制 (\d+), 失败 (\d+)", rep_txt)
+        if m is None:
+            errors.append("hero_tests_report.md pass-rate line not found")
+        else:
+            n_pass, n_total, n_known, n_fail = (int(m.group(1)), int(m.group(2)),
+                                                int(m.group(3)), int(m.group(4)))
+            if n_total != 127 or n_pass + n_known != 127 or n_fail != 0:
+                errors.append("hero_tests_report.md: pass %d + known %d != 127 or fail %d != 0"
+                              % (n_pass, n_known, n_fail))
 
     print("heroes: %d" % len(HEROES))
     print("per-hero files expected: %d" % (len(HEROES) * 3))

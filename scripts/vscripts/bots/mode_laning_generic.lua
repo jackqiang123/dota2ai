@@ -8,6 +8,32 @@ local Laning = require(GetScriptDirectory() .. "/engine/perception")
 local M = {}
 M.NAME = "laning"
 
+-- 跟随防呆 (模块级, 按英雄名记): 5 秒内没动过的小兵不跟 (召唤物原地待命 /
+-- 卡住的小兵), 否则 follow 和等兵落点来回震荡、永远走不出泉水 (模拟实测
+-- Arc Warden 复活后跟 Tempest Double 在泉水边乒乓 130 秒, 泉水挂机)。
+-- 真机里同样适用: 不动的小兵不是正往线上走的兵线, 跟它没有意义。
+local _stall = {}
+local function creepStationary(bot, c, snap)
+  -- 唯一键: 优先 PlayerID (同名英雄分属两队时名字会撞, 见 mode_dispatcher)。
+  local key = "?"
+  local ok, pid = pcall(function() return bot:GetPlayerID() end)
+  if ok and pid ~= nil then key = "pid:" .. tostring(pid)
+  else
+    local ok2, name = pcall(function() return bot:GetUnitName() end)
+    if ok2 and name ~= nil then key = name end
+  end
+  local now = snap.time or 0
+  local okL, loc = pcall(function() return c:GetLocation() end)
+  if not okL or loc == nil then return false end
+  local st = _stall[key]
+  if st ~= nil and math.abs(loc.x - st.x) < 20 and math.abs(loc.y - st.y) < 20 then
+    if now - st.since >= 5 then return true end
+    return false
+  end
+  _stall[key] = { x = loc.x, y = loc.y, since = now }
+  return false
+end
+
 function M.GetDesire(bot, snap, bb)
   if bot == nil or snap == nil then return 0 end
   local t = snap.time or 0
@@ -41,6 +67,11 @@ function M.Think(bot, snap, bb)
       end
     end
     if cd ~= nil and cd <= 150 then
+      pcall(function() bot:Action_MoveToLocation(Utility.GetLaneWaitPoint(bot, snap)) end)
+      return
+    end
+    -- 5 秒没动过的小兵不跟: 去等兵落点, 不要在原地乒乓 (见文件头 _stall)。
+    if creepStationary(bot, c, snap) then
       pcall(function() bot:Action_MoveToLocation(Utility.GetLaneWaitPoint(bot, snap)) end)
       return
     end

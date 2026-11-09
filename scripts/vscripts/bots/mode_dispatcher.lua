@@ -45,8 +45,15 @@ local function gameTime()
 end
 
 local function botKey(bot)
-  local ok, name = pcall(function() return bot:GetUnitName() end)
-  if ok and name ~= nil and name ~= "" then return name end
+  -- 唯一键: 优先 PlayerID。按英雄名索引会在同名英雄分属两队时撞键:
+  -- 模拟里所有 Bot 共用一个 Lua 状态, _lastThink/_currentMode 被互相覆盖,
+  -- 第二个同名英雄每 tick 都被 thinkDelay 节流、Think 永远不执行 (实测 Dire
+  -- Sven 走到拐角后永久冻结, 而 Radiant Sven 正常)。真机每个 Bot 独立 VM
+  -- 不会撞; 模拟里必须按实例区分。
+  local ok, pid = pcall(function() return bot:GetPlayerID() end)
+  if ok and pid ~= nil then return "pid:" .. tostring(pid) end
+  local ok2, name = pcall(function() return bot:GetUnitName() end)
+  if ok2 and name ~= nil and name ~= "" then return name end
   return tostring(bot)
 end
 

@@ -339,6 +339,8 @@ if n >= 2 then return 0.85, snap.nearestEnemy, "location" end
 if (snap.healthPct or 1) < 0.4 and snap.nearestEnemyDist ~= nil and snap.nearestEnemyDist <= 400 then return 0.8, snap.nearestEnemy, "location" end
 local t = Skill.LowestHpEnemy(snap)
 if t ~= nil and Skill.HpPctOf(t) < 0.35 and snap.nearestEnemyDist ~= nil and snap.nearestEnemyDist <= 700 then return 0.7, t, "location" end
+-- 对线骚扰: 单个敌人也值得封路 (否则 10 分钟对线单人满血对手时全程 0 施放, v3.2.0 实测); 蓝量留一半以上才放。
+if snap.nearestEnemyDist ~= nil and snap.nearestEnemyDist <= 700 and (snap.manaPct or 1) > 0.5 then return 0.55, snap.nearestEnemy, "location" end
 return 0, nil, "none"
 """,
     "W": """local ab = ab["earthshaker_enchant_totem"]
